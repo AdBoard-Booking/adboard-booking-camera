@@ -25,12 +25,13 @@ async function scanIpRange(baseIp) {
   const ipChecks = [];
 
   for (let i = 0; i < 256; i++) {
-    const ip = `${baseIp}.${i}:8000/api/status`;
+    
+    const ip = `http://pi:pi@${baseIp}.${i}:8000/api/status`;
     ipChecks.push(limit(async () => {
       console.log(`Scanning ${ip}`);
       try {
         const response = await axios.get(`http://${ip}`, { timeout: 1000 });
-        if (response.status === 200 && response.data.cpuSerialNumber) {
+        if (response.status === 200 && response.data.data.cpuSerialNumber) {
           console.log(`Found CPU Serial Number: ${response.data.cpuSerialNumber} at ${ip}`);
           return response.data.cpuSerialNumber;
         }
