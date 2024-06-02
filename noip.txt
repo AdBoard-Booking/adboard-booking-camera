@@ -1,0 +1,23 @@
+User ankur.kus1@gmail.com/KUshwaha12
+Host: piplayer.ddns.net
+
+https://my.noip.com/dynamic-dns/duc
+
+noip-duc -g all.ddnskey.com --username ankur.kus1@gmail.com --password KUshwaha12
+
+//DuckDNS
+https://www.duckdns.org/install.jsp?tab=pi&domain=piplayer1
+
+//Camera server
+Static image server
+
+
+Steps for pi-camera
+
+1. Get the local IP address for current machine , say this comes out 192.168.29.192
+2. Get all players whose IP address matches with above IP address. It will not match exactly, just the last number will be different
+3. Scan the IPs for the range with URL 192.168.29.x:8000/api/status. x can be 0 to 255
+4. If response is 200, get the cpuSerialNumber from response
+5. Start the web server by running node ./server.js
+6. Setup tunnel using pitunnel --port=3000 --http --name=cpuSerialNumber
+7. Register to the sever with cpuSerialNumber
