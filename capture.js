@@ -22,7 +22,9 @@ function captureImage() {
   return new Promise((resolve,reject)=>{
     const raspistill = spawn('raspistill', [
       '-o', imagePath,
-      '-br', '60', // Increase brightness (range 0 to 100)
+      '-w', 640,
+      '-h', 480,
+      '-q', 100
     ]);
     raspistill.on('error', (err) => {
       console.error('Failed to start subprocess.', err);
@@ -42,7 +44,7 @@ function captureImage() {
 
 // Serve the captured image
 app.get('/image', async (req, res) => {
-  await captureImage();
+  captureImage();
   res.sendFile(imagePath);
 });
 
