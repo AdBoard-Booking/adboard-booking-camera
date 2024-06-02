@@ -5,7 +5,7 @@
   "type": "module",
   "main": "scan-and-register.js",
   "scripts": {
-    "start":"node scan-and-register.js",
+    "start": "node scan-and-register.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -13,6 +13,7 @@
   "dependencies": {
     "axios": "^1.7.2",
     "express": "^4.19.2",
+    "node-machine-id": "^1.1.12",
     "p-limit": "^5.0.0",
     "public-ip": "^6.0.2"
   }
