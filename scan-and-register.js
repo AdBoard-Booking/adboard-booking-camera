@@ -76,7 +76,14 @@ function setupTunnel() {
   
   return new Promise((resolve, reject) => {
     exec(`pitunnel --port=3000 --http --name=picam-${deviceId} --persist`, (error, stdout, stderr) => {
-      console.log(`Tunnel setup successful`);
+      if (error) {
+        console.error(`Error: ${error}`);
+        console.error(`stderr: ${stderr}`);
+      }else{
+        console.log(`stdout: ${stdout}`);
+        console.log(`Tunnel setup successful`);
+      }
+
       resolve();
     });
   });
