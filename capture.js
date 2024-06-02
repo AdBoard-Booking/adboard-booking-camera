@@ -22,7 +22,6 @@ function captureImage() {
   return new Promise((resolve,reject)=>{
     const raspistill = spawn('raspistill', [
       '-o', imagePath,
-      '-t', '1',
       '-br', '60', // Increase brightness (range 0 to 100)
     ]);
     raspistill.on('error', (err) => {
@@ -30,7 +29,7 @@ function captureImage() {
       reject(err);
     });
     raspistill.on('exit', (code) => {
-      console.log(`child process exited with code ${code}`);
+      // console.log(`child process exited with code ${code}`);
       resolve();
     }); 
   })

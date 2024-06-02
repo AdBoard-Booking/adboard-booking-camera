@@ -88,9 +88,8 @@ function setupTunnel(cpuSerialNumber) {
     const baseIp = localIp.split('.').slice(0, 3).join('.');
     const cpuSerialNumber = await scanIpRange(baseIp);
 
-    startWebServer();
-
     await setupTunnel(cpuSerialNumber);
+    startWebServer();
 
   } catch (error) {
     console.error(error.message);
