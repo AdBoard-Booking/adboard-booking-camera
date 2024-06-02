@@ -71,12 +71,8 @@ function startWebServer() {
 function setupTunnel(cpuSerialNumber) {
   return new Promise((resolve, reject) => {
     exec(`pitunnel --port=3000 --http --name=picam-${cpuSerialNumber} --persist`, (error, stdout, stderr) => {
-      if (error) {
-        reject(`Tunnel setup failed: ${stderr}`);
-      } else {
-        console.log(`Tunnel setup successful: ${stdout}`);
-        resolve();
-      }
+      console.log(`Tunnel setup successful`);
+      resolve();
     });
   });
 }
@@ -88,10 +84,10 @@ function setupTunnel(cpuSerialNumber) {
     const baseIp = localIp.split('.').slice(0, 3).join('.');
     const cpuSerialNumber = await scanIpRange(baseIp);
 
-    await setupTunnel(cpuSerialNumber);
+    setupTunnel(cpuSerialNumber);
     startWebServer();
 
   } catch (error) {
-    console.error(error.message);
+    console.error('Failed: ', error);
   }
 })();
