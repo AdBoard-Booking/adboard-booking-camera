@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import express from 'express';
 import { networkInterfaces } from 'os';
 import pLimit from 'p-limit';
-import capture from './capture';
+import capture from './capture.js';
 
 // Get the local IP address
 function getLocalIp() {
