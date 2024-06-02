@@ -2,8 +2,8 @@ import axios from 'axios';
 import { exec } from 'child_process';
 import express from 'express';
 import { networkInterfaces } from 'os';
-import { publicIpv4 } from 'public-ip';
 import pLimit from 'p-limit';
+import capture from './capture';
 
 // Get the local IP address
 function getLocalIp() {
@@ -31,9 +31,10 @@ async function scanIpRange(baseIp) {
       console.log(`Scanning ${ip}`);
       try {
         const response = await axios.get(`http://${ip}`, { timeout: 1000 });
-        if (response.status === 200 && response.data.data.cpuSerialNumber) {
-          console.log(`Found CPU Serial Number: ${response.data.cpuSerialNumber} at ${ip}`);
-          return response.data.data.cpuSerialNumber;
+        let cpuSerialNumber = response.data.data.cpuSerialNumber
+        if (response.status === 200 && cpuSerialNumber) {
+          console.log(`Found CPU Serial Number: ${cpuSerialNumber} at ${ip}`);
+          return cpuSerialNumber;
         }
       } catch (error) {
 
@@ -58,19 +59,18 @@ function startWebServer() {
   const app = express();
   const port = 3000;
 
-  app.get('/', (req, res) => {
-    res.send('Hello World!');
-  });
+  app.use('/', capture)
 
   app.listen(port, () => {
     console.log(`Web server running at http://localhost:${port}`);
   });
+
 }
 
 // Set up the tunnel
 function setupTunnel(cpuSerialNumber) {
   return new Promise((resolve, reject) => {
-    exec(`pitunnel --port=3000 --http --name=${cpuSerialNumber} --persist`, (error, stdout, stderr) => {
+    exec(`pitunnel --port=3000 --http --name=picam-${cpuSerialNumber} --persist`, (error, stdout, stderr) => {
       if (error) {
         reject(`Tunnel setup failed: ${stderr}`);
       } else {
@@ -79,25 +79,6 @@ function setupTunnel(cpuSerialNumber) {
       }
     });
   });
-}
-
-// Register with the server
-async function registerServer(cpuSerialNumber) {
-  const publicIpAddress = await publicIpv4();
-  const registrationUrl = `http://your-registration-server.com/register`;
-  try {
-    const response = await axios.post(registrationUrl, {
-      cpuSerialNumber: cpuSerialNumber,
-      ipAddress: publicIpAddress
-    });
-    if (response.status === 200) {
-      console.log(`Registration successful: ${response.data}`);
-    } else {
-      console.log(`Registration failed: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error(`Registration error: ${error.message}`);
-  }
 }
 
 // Main function
@@ -111,7 +92,6 @@ async function registerServer(cpuSerialNumber) {
 
     await setupTunnel(cpuSerialNumber);
 
-    await registerServer(cpuSerialNumber);
   } catch (error) {
     console.error(error.message);
   }
