@@ -5,6 +5,7 @@
   "type": "module",
   "main": "scan-and-register.js",
   "scripts": {
+    "start":"node scan-and-register.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
