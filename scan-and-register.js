@@ -20,11 +20,11 @@ function getLocalIp() {
 }
 
 // Scan the IP range and get the cpuSerialNumber
-async function scanIpRange(baseIp) {
+async function scanIpRange(baseIp,lastValue) {
   const limit = pLimit(10); // Limit to 10 concurrent requests
   const ipChecks = [];
 
-  for (let i = 0; i < 256; i++) {
+  for (let i = lastValue; i >= 0; i--) {
     
     const ip = `pi:pi@${baseIp}.${i}:8000/api/status`;
     ipChecks.push(limit(async () => {
@@ -46,6 +46,36 @@ async function scanIpRange(baseIp) {
   // Wait for all promises to settle and filter out null results
   const results = await Promise.all(ipChecks);
   const validResults = results.filter(result => result !== null);
+
+  if (validResults.length > 0) {
+    return validResults[0]; // Return the first valid result
+  }
+
+  ipChecks = [];
+
+  for (let i = lastValue; i < 256; i++) {
+    
+    const ip = `pi:pi@${baseIp}.${i}:8000/api/status`;
+    ipChecks.push(limit(async () => {
+      console.log(`Scanning ${ip}`);
+      try {
+        const response = await axios.get(`http://${ip}`, { timeout: 1000 });
+        let cpuSerialNumber = response.data.data.cpuSerialNumber
+        if (response.status === 200 && cpuSerialNumber) {
+          console.log(`Found CPU Serial Number: ${cpuSerialNumber} at ${ip}`);
+          return cpuSerialNumber;
+        }
+      } catch (error) {
+
+      }
+      return null;
+    }));
+  }
+
+
+  // Wait for all promises to settle and filter out null results
+  results = await Promise.all(ipChecks);
+  validResults = results.filter(result => result !== null);
 
   if (validResults.length > 0) {
     return validResults[0]; // Return the first valid result
@@ -82,7 +112,8 @@ function setupTunnel(cpuSerialNumber) {
   try {
     const localIp = getLocalIp();
     const baseIp = localIp.split('.').slice(0, 3).join('.');
-    const cpuSerialNumber = await scanIpRange(baseIp);
+    const lastValue = localIp.split('.').pop();
+    const cpuSerialNumber = await scanIpRange(baseIp,lastValue);
 
     setupTunnel(cpuSerialNumber);
     startWebServer();
