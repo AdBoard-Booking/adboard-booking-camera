@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { exec } from 'child_process';
+import { exec,execSync } from 'child_process';
 import express from 'express';
 import { networkInterfaces } from 'os';
 import pLimit from 'p-limit';
@@ -70,7 +70,7 @@ function startWebServer() {
 }
 
 // Set up the tunnel
-function setupTunnel() {
+function setupTunnel(retried) {
 
   console.log(`Setting up tunnel for ${deviceId}`);
   
@@ -79,6 +79,14 @@ function setupTunnel() {
       if (error) {
         console.error(`Error: ${error}`);
         console.error(`stderr: ${stderr}`);
+
+        execSync(`pitunnel --remove 1`)
+        if(retried){
+          return reject(error);
+        }else{
+          return setupTunnel(true);
+        }
+
       }else{
         console.log(`stdout: ${stdout}`);
         console.log(`Tunnel setup successful`);
