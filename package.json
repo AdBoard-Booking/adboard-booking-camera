@@ -5,7 +5,7 @@
   "type": "module",
   "main": "scan-and-register.js",
   "scripts": {
-    "start": "node scan-and-register.js",
+    "start": "chmod +x setup_streaming.sh && sudo ./setup_streaming.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
