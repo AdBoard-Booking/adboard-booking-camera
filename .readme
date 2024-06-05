@@ -1,0 +1,9 @@
+# Adboard booking camera
+
+### Steps to setup camera
+```
+git clone https://github.com/AdBoard-Booking/adboard-booking-camera
+cd adboard-booking-camera
+chmod +x setup_streaming.sh
+sudo ./setup_streaming.sh
+```
