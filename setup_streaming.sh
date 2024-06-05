@@ -11,12 +11,6 @@ if [ "$EUID" -ne 0 ]; then
   exit
 fi
 
-# Check if RTSP URL is provided as a command-line argument
-if [ -z "$1" ]; then
-  echo "Usage: $0 <RTSP_URL>"
-  exit 1
-fi
-
 # Read the RTSP URL from the file
 RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
 if [ ! -f "$RTSP_URL_FILE" ]; then
