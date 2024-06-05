@@ -142,10 +142,10 @@ echo "Using CPU serial number as device ID: $DEVICE_ID"
 
 # Register the tunnel with Pitunnel using the device ID
 echo "Registering Pitunnel..."
-pitunnel --port=80 --http --name=$DEVICE_ID --persist &
+pitunnel --port=80 --http --name=$DEVICE_ID --persist
 
 # Register the device with the server
-REGISTER_URL="http://your-registration-server.com/register"
+# REGISTER_URL="http://your-registration-server.com/register"
 PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
 echo "Registering device with server..."
 # curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "ipAddress": "'"$PUBLIC_IP"'"}' $REGISTER_URL
