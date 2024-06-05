@@ -108,6 +108,14 @@ if [ ! -f "$HTML_FILE" ]; then
     <title>RTSP to HLS Stream</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
+<style>
+  video {
+        height: 100vh;
+        width: 100%;
+        object-fit: fill; // use "cover" to avoid distortion
+        position: absolute;
+    }
+</style>
 <body>
     <video id="video" controls></video>
     <script>
