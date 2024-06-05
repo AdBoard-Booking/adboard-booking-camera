@@ -9,7 +9,10 @@ This repository contains a script (`setup_streaming.sh`) that sets up streaming 
 git clone https://github.com/AdBoard-Booking/adboard-booking-camera
 cd adboard-booking-camera
 
+sudo apt-get install nmap
+
 sudo cp setup_streaming.sh /usr/local/bin/setup_streaming.sh
+sudo cp scan_rtsp.sh /usr/local/bin/scan_rtsp.sh
 sudo cp stream.html /usr/local/bin/stream.html
 sudo chmod +x /usr/local/bin/setup_streaming.sh
 sudo chmod +x /usr/local/bin/scan_rtsp.sh
