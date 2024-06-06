@@ -10,8 +10,8 @@ fi
 # ./install_dependencies.sh
 
 # Copy scripts to /usr/local/bin
-cp start_streaming.sh /usr/local/bin/start_streaming.sh
-cp start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
+cp ./setup_streaming.sh /usr/local/bin/setup_streaming.sh
+cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
 
 # Change permissions
 sudo chmod +x /usr/local/bin/start_streaming.sh
