@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Ensure the script is run as root
-if [ "$EUID" -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
   echo "Please run as root"
   exit
 fi
@@ -10,16 +10,16 @@ fi
 # ./install_dependencies.sh
 
 # Copy scripts to /usr/local/bin
-cp ./setup_streaming.sh /usr/local/bin/setup_streaming.sh
-cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
+sudo cp ./setup_streaming.sh /usr/local/bin/setup_streaming.sh
+sudo cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
 
 # Change permissions
 sudo chmod +x /usr/local/bin/start_streaming.sh
 sudo chmod +x /usr/local/bin/start_ffmpeg.sh
 
 # Copy service files
-cp setup.service /etc/systemd/system/setup_streaming.service
-cp ffmpeg.service /etc/systemd/system/ffmpeg-streaming.service
+sudo cp setup.service /etc/systemd/system/setup_streaming.service
+sudo cp ffmpeg.service /etc/systemd/system/ffmpeg-streaming.service
 
 # Reload systemd daemon
 systemctl daemon-reload
