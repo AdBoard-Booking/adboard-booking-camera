@@ -20,34 +20,6 @@ fi
 
 RTSP_URL=$(cat $RTSP_URL_FILE)
 
-# Update package list
-echo "Updating package list..."
-apt-get update
-
-# Install FFmpeg if not installed
-if command_exists ffmpeg; then
-  echo "FFmpeg is already installed."
-else
-  echo "Installing FFmpeg..."
-  apt-get install -y ffmpeg
-fi
-
-# Install Nginx if not installed
-if command_exists nginx; then
-  echo "Nginx is already installed."
-else
-  echo "Installing Nginx..."
-  apt-get install -y nginx
-fi
-
-# Install Pitunnel if not installed
-if command_exists pitunnel; then
-  echo "Pitunnel is already installed."
-else
-  echo "Installing Pitunnel..."
-  sudo npm install -g pitunnel
-fi
-
 # Create directory for HLS output if it doesn't exist
 HLS_DIR="/var/www/html/hls"
 if [ ! -d "$HLS_DIR" ]; then
@@ -110,7 +82,6 @@ if [ ! -f "$HTML_FILE" ]; then
 </head>
 <style>
   video {
-        height: 100vh;
         width: 100%;
         object-fit: fill; // use "cover" to avoid distortion
         position: absolute;
