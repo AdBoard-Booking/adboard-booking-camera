@@ -11,14 +11,23 @@ if [ "$EUID" -ne 0 ]; then
   exit
 fi
 
-# Read the RTSP URL from the file
+# File to store the RTSP URL
 RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
-if [ ! -f "$RTSP_URL_FILE" ]; then
-  echo "RTSP URL file not found. Please run scan_rtsp.sh first."
-  exit 1
-fi
 
-RTSP_URL=$(cat $RTSP_URL_FILE)
+# Check if RTSP URL is provided as a command-line argument
+if [ -z "$1" ]; then
+  if [ ! -f "$RTSP_URL_FILE" ]; then
+    echo "Usage: $0 <RTSP_URL>"
+    exit 1
+  else
+    RTSP_URL=$(cat $RTSP_URL_FILE)
+    echo "Using RTSP URL from file: $RTSP_URL"
+  fi
+else
+  RTSP_URL=$1
+  echo "Saving RTSP URL to file: $RTSP_URL"
+  echo $RTSP_URL > $RTSP_URL_FILE
+fi
 
 # Create directory for HLS output if it doesn't exist
 HLS_DIR="/var/www/html/hls"
@@ -29,13 +38,6 @@ fi
 # Ensure the directory has correct permissions
 chown -R www-data:www-data $HLS_DIR
 chmod -R 755 $HLS_DIR
-
-# Stop any existing FFmpeg processes to avoid conflicts
-pkill -f ffmpeg
-
-# Start FFmpeg to transcode RTSP to HLS
-echo "Starting FFmpeg to transcode RTSP to HLS..."
-ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 &
 
 # Configure Nginx to serve HLS
 NGINX_CONF="/etc/nginx/sites-available/default"
@@ -69,64 +71,21 @@ EOL
 echo "Restarting Nginx..."
 systemctl restart nginx
 
-# Create an HTML file to play the HLS stream if it doesn't exist
-HTML_FILE="/var/www/html/index.html"
-
-echo "Creating HTML file to play the HLS stream..."
-cat > $HTML_FILE <<EOL
-<!DOCTYPE html>
-<html>
-<head>
-    <title>RTSP to HLS Stream</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-</head>
-<style>
-  video {
-        width: 100%;
-        object-fit: fill; // use "cover" to avoid distortion
-        position: absolute;
-    }
-</style>
-<body>
-    <video id="video" controls></video>
-    <script>
-        if (Hls.isSupported()) {
-            var video = document.getElementById('video');
-            var hls = new Hls();
-            hls.loadSource('/hls/stream.m3u8');
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MEDIA_ATTACHED, function () {
-              video.muted = true;
-              video.play();
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = '/hls/stream.m3u8';
-            video.addEventListener('loadedmetadata', function() {
-                video.muted = true;
-                video.play();
-            });
-        }
-    </script>
-</body>
-</html>
-EOL
-
+# Copy the HTML file to serve the HLS stream
+cp /usr/local/bin/stream.html /var/www/html/index.html
 
 # Get the CPU serial number as the device ID
 DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)
 echo "Using CPU serial number as device ID: $DEVICE_ID"
-
-# Stop any existing Pitunnel processes to avoid conflicts
-# pkill -f pitunnel
 
 # Register the tunnel with Pitunnel using the device ID
 echo "Registering Pitunnel..."
 pitunnel --port=80 --http --name=$DEVICE_ID --persist
 
 # Register the device with the server
-# REGISTER_URL="http://your-registration-server.com/register"
+REGISTER_URL="http://your-registration-server.com/register"
 PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
 echo "Registering device with server..."
-# curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "ipAddress": "'"$PUBLIC_IP"'"}' $REGISTER_URL
+curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "ipAddress": "'"$PUBLIC_IP"'"}' $REGISTER_URL
 
 echo "Setup complete. You can now access the stream via the Pitunnel URL provided."

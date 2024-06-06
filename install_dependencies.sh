@@ -31,10 +31,4 @@ else
   apt-get install -y nginx
 fi
 
-# Install Pitunnel if not installed
-if command_exists pitunnel; then
-  echo "Pitunnel is already installed."
-else
-  echo "Installing Pitunnel..."
-  sudo npm install -g pitunnel
-fi
+echo "All dependencies are installed."

@@ -1,0 +1,13 @@
+[Unit]
+Description=Setup Streaming Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/setup_streaming.sh
+Restart=on-failure
+StandardOutput=file:/var/log/setup_streaming.log
+StandardError=file:/var/log/setup_streaming.err
+User=root
+
+[Install]
+WantedBy=multi-user.target
