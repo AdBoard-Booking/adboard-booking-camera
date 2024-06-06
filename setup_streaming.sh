@@ -52,6 +52,9 @@ server {
 
     server_name _;
 
+    # Add this block to set the CSP header
+    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost https://*.adboardbooking.com";
+
     location / {
         try_files \$uri \$uri/ =404;
     }
