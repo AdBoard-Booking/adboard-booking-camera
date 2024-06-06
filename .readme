@@ -11,7 +11,9 @@ cd adboard-booking-camera
 
 sudo apt-get install nmap
 
-git pull origin main
+git fetch
+git reset --hard origin/main
 sudo sh ./setup.sh
+
 
 FFmpeg logs: /var/log/ffmpeg_stream.log and /var/log/ffmpeg_stream.err

@@ -8,7 +8,7 @@ Restart=on-failure
 RestartSec=10
 StandardOutput=file:/var/log/ffmpeg_stream.log
 StandardError=file:/var/log/ffmpeg_stream.err
-User=www-data
+User=root
 
 [Install]
 WantedBy=multi-user.target
