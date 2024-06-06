@@ -86,9 +86,9 @@ echo "Registering Pitunnel..."
 pitunnel --port=80 --http --name=$DEVICE_ID --persist
 
 # Register the device with the server
-REGISTER_URL="http://your-registration-server.com/register"
+REGISTER_URL="https://railway.adboardbooking.com/api/camera/register"
 PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
 echo "Registering device with server..."
-curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "ipAddress": "'"$PUBLIC_IP"'"}' $REGISTER_URL
+curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "tunnelUrl": "'"$PUBLIC_IP"'"}' $REGISTER_URL
 
 echo "Setup complete. You can now access the stream via the Pitunnel URL provided."
