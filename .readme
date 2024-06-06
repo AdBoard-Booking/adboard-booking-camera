@@ -12,35 +12,6 @@ cd adboard-booking-camera
 sudo apt-get install nmap
 
 git pull origin main
-sudo cp setup_streaming.sh /usr/local/bin/setup_streaming.sh
-sudo cp scan_rtsp.sh /usr/local/bin/scan_rtsp.sh
-sudo chmod +x /usr/local/bin/setup_streaming.sh
-sudo chmod +x /usr/local/bin/scan_rtsp.sh
+sudo sh ./setup.sh
 
-Open the cron table for the root user:
-
-sudo nano /etc/systemd/system/setup_streaming.service
-
-```
-[Unit]
-Description=Setup Streaming Service
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/setup_streaming.sh
-Restart=on-failure
-User=root
-
-[Install]
-WantedBy=multi-user.target
-```
-
-sudo systemctl daemon-reload
-sudo systemctl enable setup_streaming.service
-
-//test
-sudo systemctl start setup_streaming.service
-
-//check
-sudo systemctl status setup_streaming.service
-
+FFmpeg logs: /var/log/ffmpeg_stream.log and /var/log/ffmpeg_stream.err

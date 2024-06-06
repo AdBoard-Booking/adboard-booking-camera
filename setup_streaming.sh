@@ -72,7 +72,7 @@ echo "Restarting Nginx..."
 systemctl restart nginx
 
 # Copy the HTML file to serve the HLS stream
-cp /usr/local/bin/stream.html /var/www/html/index.html
+sudo cp ./stream.html /var/www/html/index.html
 
 # Get the CPU serial number as the device ID
 DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)
