@@ -71,9 +71,9 @@ systemctl restart nginx
 
 # Create an HTML file to play the HLS stream if it doesn't exist
 HTML_FILE="/var/www/html/index.html"
-if [ ! -f "$HTML_FILE" ]; then
-  echo "Creating HTML file to play the HLS stream..."
-  cat > $HTML_FILE <<EOL
+
+echo "Creating HTML file to play the HLS stream..."
+cat > $HTML_FILE <<EOL
 <!DOCTYPE html>
 <html>
 <head>
@@ -110,7 +110,7 @@ if [ ! -f "$HTML_FILE" ]; then
 </body>
 </html>
 EOL
-fi
+
 
 # Get the CPU serial number as the device ID
 DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)

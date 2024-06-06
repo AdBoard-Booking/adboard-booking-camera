@@ -19,6 +19,28 @@ sudo chmod +x /usr/local/bin/scan_rtsp.sh
 
 Open the cron table for the root user:
 
-sudo crontab -e
-@reboot /usr/local/bin/setup_streaming.sh
-Save and close the crontab file.
+sudo nano /etc/systemd/system/setup_streaming.service
+
+```
+[Unit]
+Description=Setup Streaming Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/setup_streaming.sh
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+
+sudo systemctl daemon-reload
+sudo systemctl enable setup_streaming.service
+
+//test
+sudo systemctl start setup_streaming.service
+
+//check
+sudo systemctl status setup_streaming.service
+
