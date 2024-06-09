@@ -18,9 +18,3 @@ sudo sh ./setup.sh
 
 FFmpeg logs: /var/log/ffmpeg_stream.log and /var/log/ffmpeg_stream.err
 
-
-## Wifi Setup
-sudo apt-get update
-sudo apt-get install -y hostapd dnsmasq lighttpd
-chmod +x setup_wifi.sh
-sudo ./setup_wifi.sh

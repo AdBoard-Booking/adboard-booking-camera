@@ -6,9 +6,6 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-# Run the installation script
-# ./install_dependencies.sh
-
 # Copy scripts to /usr/local/bin
 # sudo cp ./setup_streaming.sh /usr/local/bin/setup_streaming.sh
 sudo cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
