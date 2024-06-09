@@ -168,7 +168,7 @@ echo "Using CPU serial number as device ID: $DEVICE_ID"
 # Register the tunnel with Pitunnel using the device ID
 echo "Registering Pitunnel..."
 pitunnel --remove 1
-pitunnel --port=80 --http --name=$DEVICE_ID --persist
+pitunnel --port=80 --http --name=$DEVICE_ID --persist &
 
 # Register the device with the server
 REGISTER_URL="https://railway.adboardbooking.com/api/camera/register"
@@ -193,7 +193,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
   "rtspUrl": "'"$RTSP_URL"'",
   "publicIp": "'"$PUBLIC_IP"'",
   "privateIp": "'"$PRIVATE_IP"'",
-  "cameraUrl": "'"$CAMERA_URL"'
+  "cameraUrl": "'"$CAMERA_URL"'"
 }' $REGISTER_URL
 
 echo "Setup complete. You can now access the stream via the Pitunnel URL provided."
