@@ -170,7 +170,7 @@ PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
 echo "Registering device with server..."
 
 TUNNEL_URL="https://$DEVICE_ID-ankurkus.in1.pitunnel.com/?hash=$HASH"
-
+echo "Stream URL: $TUNNEL_URL"
 curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "tunnelUrl": "'"$TUNNEL_URL"'"}' $REGISTER_URL
 
 echo "Setup complete. You can now access the stream via the Pitunnel URL provided."
@@ -188,4 +188,4 @@ echo "Starting FFmpeg to transcode RTSP to HLS..."
 sudo ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 > $LOG_FILE 2>&1
 
 # Output the URL to access the stream
-echo "Stream URL: http://$(hostname -I | awk '{print $1}')/?hash=$HASH"
+
