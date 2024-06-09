@@ -162,6 +162,7 @@ echo "Using CPU serial number as device ID: $DEVICE_ID"
 
 # Register the tunnel with Pitunnel using the device ID
 echo "Registering Pitunnel..."
+pitunnel --remove 1
 pitunnel --port=80 --http --name=$DEVICE_ID --persist
 
 # Register the device with the server
