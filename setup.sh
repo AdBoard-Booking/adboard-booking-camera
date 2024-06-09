@@ -6,6 +6,12 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
+echo "Updating package list..."
+apt-get update
+apt-get install -y ffmpeg
+apt-get install -y nginx
+
+echo "All dependencies are installed."
 
 # Configure Nginx to serve HLS
 NGINX_CONF="/etc/nginx/sites-available/default"
@@ -115,7 +121,6 @@ cat > /var/www/html/index.html <<EOL
 </html>
 EOL
 
-
 # Get the CPU serial number as the device ID
 DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)
 echo "Using CPU serial number as device ID: $DEVICE_ID"
@@ -126,25 +131,18 @@ pitunnel --remove 1
 pitunnel --port=80 --http --name=$DEVICE_ID --persist
 
 # Copy scripts to /usr/local/bin
-# sudo cp ./setup_streaming.sh /usr/local/bin/setup_streaming.sh
 sudo cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
 
 # Change permissions
-# sudo chmod +x ./setup_streaming.sh
-# sudo sh ./setup_streaming.sh
 sudo chmod +x /usr/local/bin/start_ffmpeg.sh
 
 # Copy service files
-# sudo cp setup.service /etc/systemd/system/setup_streaming.service
 sudo cp ffmpeg.service /etc/systemd/system/ffmpeg.service
 
 # Reload systemd daemon
 systemctl daemon-reload
 
 # Enable and start services
-# systemctl enable setup_streaming.service
-# systemctl start setup_streaming.service
-
 systemctl enable ffmpeg.service
 systemctl start ffmpeg.service
 
