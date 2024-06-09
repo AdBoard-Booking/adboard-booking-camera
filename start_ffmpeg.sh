@@ -16,6 +16,11 @@ generate_hash() {
     echo -n "$1" | md5sum | awk '{print $1}'
 }
 
+# Function to get the private IP address
+get_private_ip() {
+    hostname -I | awk '{print $1}'
+}
+
 # File to store the RTSP URL
 RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
 
@@ -168,11 +173,19 @@ pitunnel --port=80 --http --name=$DEVICE_ID --persist
 # Register the device with the server
 REGISTER_URL="https://railway.adboardbooking.com/api/camera/register"
 PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
+PRIVATE_IP=$(get_private_ip)
+
 echo "Registering device with server..."
 
-TUNNEL_URL="https://$DEVICE_ID-ankurkus.in1.pitunnel.com/?hash=$HASH"
-echo "Stream URL: $TUNNEL_URL"
-curl -X POST -H "Content-Type: application/json" -d '{"deviceId": "'"$DEVICE_ID"'", "tunnelUrl": "'"$TUNNEL_URL"'"}' $REGISTER_URL
+CAMERA_URL="https://$DEVICE_ID-ankurkus.in1.pitunnel.com/?hash=$HASH"
+echo "Stream URL: $CAMERA_URL"
+curl -X POST -H "Content-Type: application/json" -d '{
+  "deviceId": "'"$DEVICE_ID"'",
+  "rtspUrl": "'"$RTSP_URL"'",
+  "publicIp": "'"$PUBLIC_IP"'",
+  "privateIp": "'"$PRIVATE_IP"'",
+  "cameraUrl": "'"$CAMERA_URL"'
+}' $REGISTER_URL
 
 echo "Setup complete. You can now access the stream via the Pitunnel URL provided."
 
