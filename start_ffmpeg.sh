@@ -179,6 +179,15 @@ echo "Registering device with server..."
 
 CAMERA_URL="https://$DEVICE_ID-ankurkus.in1.pitunnel.com/?hash=$HASH"
 echo "Stream URL: $CAMERA_URL"
+
+echo '{
+  "deviceId": "'"$DEVICE_ID"'",
+  "rtspUrl": "'"$RTSP_URL"'",
+  "publicIp": "'"$PUBLIC_IP"'",
+  "privateIp": "'"$PRIVATE_IP"'",
+  "cameraUrl": "'"$CAMERA_URL"'
+}'
+
 curl -X POST -H "Content-Type: application/json" -d '{
   "deviceId": "'"$DEVICE_ID"'",
   "rtspUrl": "'"$RTSP_URL"'",
