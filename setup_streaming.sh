@@ -67,6 +67,13 @@ server {
         alias /var/www/html/hls;
         add_header Cache-Control no-cache;
     }
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+        root /var/www/html;
+        add_header Content-Type text/html;
+        return 200 "";
+    }
 }
 EOL
 
@@ -76,6 +83,7 @@ systemctl restart nginx
 
 # Copy the HTML file to serve the HLS stream
 sudo cp ./stream.html /var/www/html/index.html
+sudo cp ./404.html /usr/share/nginx/html/custom_404.html
 
 # Get the CPU serial number as the device ID
 DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)

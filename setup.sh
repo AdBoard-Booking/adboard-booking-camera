@@ -14,8 +14,8 @@ fi
 sudo cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
 
 # Change permissions
-sudo chmod +x ./setup_streaming.sh
-sudo sh ./setup_streaming.sh
+# sudo chmod +x ./setup_streaming.sh
+# sudo sh ./setup_streaming.sh
 sudo chmod +x /usr/local/bin/start_ffmpeg.sh
 
 # Copy service files
