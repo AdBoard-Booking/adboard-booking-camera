@@ -4,7 +4,7 @@ set -e
 
 echo "Updating package list and installing required packages..."
 sudo apt-get update
-sudo apt-get install -y dnsmasq hostapd nginx php-fpm
+# sudo apt-get install -y dnsmasq hostapd nginx php-fpm
 
 echo "Configuring hostapd..."
 sudo bash -c 'cat > /etc/hostapd/hostapd.conf << EOF
