@@ -124,7 +124,7 @@ FFMPG_PID=$!
 SLEEP_TIME="1m"
 
 # Get the last modification time of the file
-LAST_MODIFICATION=$(stat -c %Y "$LOG_FILE")
+LAST_MODIFICATION=$(stat -c %s "$LOG_FILE")
 
 while true; do
     echo "$(date) - Slepping for $SLEEP_TIME" | tee -a $LOG_FILE
@@ -132,7 +132,7 @@ while true; do
     sleep $SLEEP_TIME
 
     # Check current modification time
-    CURRENT_MODIFICATION=$(stat -c %Y "$LOG_FILE")
+    CURRENT_MODIFICATION=$(stat -c %s "$LOG_FILE")
 
     # Compare the last modification time with the current modification time
     if [[ $LAST_MODIFICATION == $CURRENT_MODIFICATION ]]; then
