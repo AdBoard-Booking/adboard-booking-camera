@@ -115,22 +115,34 @@ done
 echo "Starting FFmpeg to transcode RTSP to HLS..."
 KILL_INTERVAL="10m"         # Interval to kill ffmpeg process (e.g., 10m for 10 minutes)
 
-while true; do
-    echo "$(date) - Starting ffmpeg..." | tee -a $LOG_FILE
+echo "$(date) - Starting ffmpeg..." | tee -a $LOG_FILE
     
-    # Start ffmpeg process in the background
-    ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 >> $LOG_FILE 2>&1 &
-    FFMPG_PID=$!
+# Start ffmpeg process in the background
+ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 >> $LOG_FILE 2>&1 &
+FFMPG_PID=$!
 
-    # Sleep for the kill interval then kill the ffmpeg process
-    sleep $KILL_INTERVAL
-    echo "$(date) - Killing ffmpeg process (PID: $FFMPG_PID)" | tee -a $LOG_FILE
-    sudo kill $FFMPG_PID
+SLEEP_TIME=60
 
-    # Wait for the ffmpeg process to fully terminate
-    wait $FFMPG_PID
+# Get the last modification time of the file
+LAST_MODIFICATION=$(stat -c %Y "$LOG_FILE")
 
-    echo "$(date) - ffmpeg process killed. Restarting..." | tee -a $LOG_FILE
+while true; do
+    echo "$(date) - Slepping for $SLEEP_TIME" | tee -a $LOG_FILE
+    # Wait for specified time
+    sleep $SLEEP_TIME
+
+    # Check current modification time
+    CURRENT_MODIFICATION=$(stat -c %Y "$LOG_FILE")
+
+    # Compare the last modification time with the current modification time
+    if [[ $LAST_MODIFICATION == $CURRENT_MODIFICATION ]]; then
+        echo "$(date) - Log file has not been updated. Exiting." | tee -a $LOG_FILE
+        # Command to kill the process or perform any action needed
+        exit 1
+    else
+        echo "$(date) - Log file has been updated." | tee -a $LOG_FILE
+        # Update LAST_MODIFICATION to the new modification time
+        LAST_MODIFICATION=$CURRENT_MODIFICATION
+    fi
 done
-
  

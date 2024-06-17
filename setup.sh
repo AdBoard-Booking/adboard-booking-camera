@@ -6,13 +6,6 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-echo "Updating package list..."
-apt-get update
-apt-get install -y ffmpeg
-apt-get install -y nginx
-
-echo "All dependencies are installed."
-
 # Configure Nginx to serve HLS
 NGINX_CONF="/etc/nginx/sites-available/default"
 echo "Configuring Nginx..."

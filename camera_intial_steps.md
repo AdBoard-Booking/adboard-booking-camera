@@ -64,3 +64,5 @@ Create an empty file named ssh (without any extension) in the root directory of 
 ### Logs
 sudo journalctl -u ffmpeg.service -f
 tail -f /var/log/ffmpeg_stream.log
+
+ps aux | grep -i '[f]fmpeg'
