@@ -121,7 +121,7 @@ while true; do
     # Sleep for the kill interval then kill the ffmpeg process
     sleep $KILL_INTERVAL
     echo "$(date) - Killing ffmpeg process (PID: $FFMPG_PID)" | tee -a $LOG_FILE
-    kill $FFMPG_PID
+    sudo kill $FFMPG_PID
 
     # Wait for the ffmpeg process to fully terminate
     wait $FFMPG_PID
