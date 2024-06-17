@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/start_ffmpeg.sh
-Restart=on-failure
+Restart=always
 RestartSec=10
 StandardOutput=file:/var/log/ffmpeg_stream.log
 StandardError=file:/var/log/ffmpeg_stream.err

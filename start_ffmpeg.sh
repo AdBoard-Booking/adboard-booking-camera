@@ -94,12 +94,11 @@ LOG_FILE="/var/log/ffmpeg_stream.log"
 
 # Ensure the log file exists and has the correct permissions
 touch $LOG_FILE
-chown root:root $LOG_FILE
 chmod 644 $LOG_FILE
 
 # Start FFmpeg to transcode RTSP to HLS
 echo "Starting FFmpeg to transcode RTSP to HLS..."
-ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8
+ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 >> $LOG_FILE 2>&1
 
 # Output the URL to access the stream
 

@@ -30,7 +30,7 @@ server {
     add_header Content-Security-Policy "frame-ancestors 'self' http://localhost https://*.adboardbooking.com";
 
     location / {
-        if ($request_method = 'GET') {
+        if (\$request_method = 'GET') {
             add_header 'Access-Control-Allow-Origin' '*' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
