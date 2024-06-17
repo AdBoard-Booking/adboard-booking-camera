@@ -21,6 +21,10 @@ get_private_ip() {
     hostname -I | awk '{print $1}'
 }
 
+cd /home/pi/adboard-booking-camera
+git fetch
+git reset --hard origin/main
+
 # File to store the RTSP URL
 RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
 
