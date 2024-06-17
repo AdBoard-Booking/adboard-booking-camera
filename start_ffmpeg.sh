@@ -127,7 +127,7 @@ SLEEP_TIME="1m"
 LAST_MODIFICATION=$(stat -c %s "$LOG_FILE")
 
 while true; do
-    echo "$(date) - Slepping for $SLEEP_TIME" | tee -a $LOG_FILE
+    echo "$(date) - Slepping for $SLEEP_TIME"
     # Wait for specified time
     sleep $SLEEP_TIME
 
@@ -136,11 +136,11 @@ while true; do
 
     # Compare the last modification time with the current modification time
     if [[ $LAST_MODIFICATION == $CURRENT_MODIFICATION ]]; then
-        echo "$(date) - Log file has not been updated. Exiting." | tee -a $LOG_FILE
+        echo "$(date) - Log file has not been updated. Exiting." 
         # Command to kill the process or perform any action needed
         exit 1
     else
-        echo "$(date) - Log file has been updated." | tee -a $LOG_FILE
+        echo "$(date) - Log file has been updated. Current: $CURRENT_MODIFICATION, Last: $LAST_MODIFICATION"
         # Update LAST_MODIFICATION to the new modification time
         LAST_MODIFICATION=$CURRENT_MODIFICATION
     fi
