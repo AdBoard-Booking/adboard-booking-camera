@@ -96,10 +96,37 @@ LOG_FILE="/var/log/ffmpeg_stream.log"
 touch $LOG_FILE
 chmod 644 $LOG_FILE
 
+check_rtsp_stream() {
+    ffprobe -v error -i "$RTSP_URL" -show_streams > /dev/null 2>&1
+    return $?
+}
+
+# Wait for the RTSP stream to be available
+until check_rtsp_stream; do
+    echo "$(date) - Waiting for RTSP stream..." | tee -a $LOG_FILE
+    sleep 5
+done
+
 # Start FFmpeg to transcode RTSP to HLS
 echo "Starting FFmpeg to transcode RTSP to HLS..."
-ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 >> $LOG_FILE 2>&1
+KILL_INTERVAL="10m"         # Interval to kill ffmpeg process (e.g., 10m for 10 minutes)
 
-# Output the URL to access the stream
+while true; do
+    echo "$(date) - Starting ffmpeg..." | tee -a $LOG_FILE
+    
+    # Start ffmpeg process in the background
+    ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 >> $LOG_FILE 2>&1 &
+    FFMPG_PID=$!
 
+    # Sleep for the kill interval then kill the ffmpeg process
+    sleep $KILL_INTERVAL
+    echo "$(date) - Killing ffmpeg process (PID: $FFMPG_PID)" | tee -a $LOG_FILE
+    kill $FFMPG_PID
 
+    # Wait for the ffmpeg process to fully terminate
+    wait $FFMPG_PID
+
+    echo "$(date) - ffmpeg process killed. Restarting..." | tee -a $LOG_FILE
+done
+
+ 

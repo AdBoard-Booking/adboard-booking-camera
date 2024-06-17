@@ -59,3 +59,8 @@ Create an empty file named ssh (without any extension) in the root directory of 
 * Once pi is connected to internet
 * Check if PI is visible on pitunnel
 * Check if new camera server is available in adboardbooking
+
+
+### Logs
+sudo journalctl -u ffmpeg.service -f
+tail -f /var/log/ffmpeg_stream.log
