@@ -30,6 +30,12 @@ server {
     add_header Content-Security-Policy "frame-ancestors 'self' http://localhost https://*.adboardbooking.com";
 
     location / {
+        if ($request_method = 'GET') {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+            add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+        }
         try_files \$uri \$uri/ =404;
     }
 
@@ -47,13 +53,11 @@ server {
         internal;
         root /var/www/html;
         add_header Content-Type text/html;
-        return 404 "";
     }
     location = /5xx.html {
         internal;
         root /var/www/html;
         add_header Content-Type text/html;
-        return 500 "";
     }
 }
 EOL
@@ -62,8 +66,27 @@ EOL
 echo "Restarting Nginx..."
 systemctl restart nginx
 
-sudo touch /var/www/html/404.html
-sudo touch /var/www/html/5xx.html
+cat > /var/www/html/404.html <<EOL
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Adboard Booking</title>
+</head>
+<body>
+</body>
+</html>
+EOL
+
+cat > /var/www/html/5xx.html <<EOL
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Adboard Booking</title>
+</head>
+<body>
+</body>
+</html>
+EOL
 
 # Copy the updated HTML file to serve the HLS stream
 cat > /var/www/html/index.html <<EOL
