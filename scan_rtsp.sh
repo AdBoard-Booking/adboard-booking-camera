@@ -44,3 +44,5 @@ fi
 # Save the RTSP URL to a file
 echo $RTSP_URL > /usr/local/bin/rtsp_url.txt
 echo "RTSP URL saved: $RTSP_URL"
+
+#rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2

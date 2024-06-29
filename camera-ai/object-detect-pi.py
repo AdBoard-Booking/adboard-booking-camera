@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import tflite_runtime.interpreter as tflite
-import datetime
+import datetime 
 
 # Load the TFLite model and allocate tensors
 interpreter = tflite.Interpreter(model_path="detect.tflite")
@@ -11,7 +11,7 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# Function to run inference
+# Function to run inference 
 def run_inference(interpreter, frame):
     input_data = np.expand_dims(frame, axis=0).astype(np.uint8)
     interpreter.set_tensor(input_details[0]['index'], input_data)
