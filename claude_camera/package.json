@@ -1,0 +1,12 @@
+{
+  "name": "claude_camera",
+  "version": "1.0.0",
+  "description": "* Install raspian OS * Install git using `sudo apt install git`",
+  "main": "billboard_monitor.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
