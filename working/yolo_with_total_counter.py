@@ -3,26 +3,6 @@ import numpy as np
 from ultralytics import YOLO
 import supervision as sv
 from collections import defaultdict
-import json
-import os
-import gc
-
-# Function to load count data from file
-def load_count_data(filename):
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
-            data = json.load(f)
-        return data['total_person_count'], data['total_car_count']
-    return 0, 0
-
-# Function to save count data to file
-def save_count_data(filename, total_person_count, total_car_count):
-    data = {
-        'total_person_count': int(total_person_count),
-        'total_car_count': int(total_car_count)
-    }
-    with open(filename, 'w') as f:
-        json.dump(data, f)
 
 # Initialize YOLOv8 model
 model = YOLO("yolov8n.pt")
@@ -30,15 +10,13 @@ model = YOLO("yolov8n.pt")
 # Initialize the video capture from RTSP stream
 cap = cv2.VideoCapture("rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2")
 
-# Load previous count data
-count_data_file = 'count_data.json'
-total_person_count, total_car_count = load_count_data(count_data_file)
-
 # Initialize counters
 counts = defaultdict(int)
+total_person_count = 0
+total_car_count = 0
 
 # Frame skip parameter
-FRAME_SKIP = 7  # Process every 7th frame
+FRAME_SKIP = 7  # Process every 10th frame
 frame_count = 0
 
 # Class IDs
@@ -52,11 +30,7 @@ CLASS_IDS = {
 # Initialize tracker
 tracker = sv.ByteTrack()
 
-# Memory management variables
-MEMORY_CLEAR_INTERVAL = 1000  # Clear memory every 1000 frames
-last_memory_clear = 0
-
-# Sets to keep track of unique IDs for the current session
+# Sets to keep track of unique person and car IDs
 unique_person_ids = set()
 unique_car_ids = set()
 
@@ -66,15 +40,6 @@ while True:
         break
 
     frame_count += 1
-    
-    # Memory management
-    if frame_count - last_memory_clear >= MEMORY_CLEAR_INTERVAL:
-        gc.collect()
-        last_memory_clear = frame_count
-        # Reset unique ID sets periodically to prevent unbounded growth
-        unique_person_ids.clear()
-        unique_car_ids.clear()
-
     if frame_count % FRAME_SKIP != 0:
         # Show the frame without processing
         y_offset = 30
@@ -142,7 +107,7 @@ while True:
                 unique_car_ids.add(track_id)
                 total_car_count += 1
 
-    # Draw counters
+    # Draw counters and bounding boxes
     y_offset = 30
     for obj, count in counts.items():
         cv2.putText(
@@ -180,15 +145,8 @@ while True:
     # Show the frame
     cv2.imshow("YOLOv8 Multi-object Counting", frame)
 
-    # Save count data periodically (e.g., every 100 frames)
-    if frame_count % 100 == 0:
-        save_count_data(count_data_file, total_person_count, total_car_count)
-
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
-# Save final count data before exiting
-save_count_data(count_data_file, total_person_count, total_car_count)
 
 cap.release()
 cv2.destroyAllWindows()
