@@ -1,0 +1,1 @@
+rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2
