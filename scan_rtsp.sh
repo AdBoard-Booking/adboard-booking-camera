@@ -11,6 +11,23 @@ if [ "$EUID" -ne 0 ]; then
   exit
 fi
 
+# Check for force flag
+FORCE=false
+while getopts "f" opt; do
+  case $opt in
+    f) FORCE=true ;;
+    *) echo "Usage: $0 [-f]" >&2
+       exit 1 ;;
+  esac
+done
+
+# Check if file exists and not forcing
+if [ -f /usr/local/bin/rtsp_url.txt ] && [ "$FORCE" = false ]; then
+  echo "RTSP URL file exists. Content:"
+  cat /usr/local/bin/rtsp_url.txt
+  exit 0
+fi
+
 # Install Nmap if not installed
 if command_exists nmap; then
   echo "Nmap is already installed."
@@ -44,5 +61,3 @@ fi
 # Save the RTSP URL to a file
 echo $RTSP_URL > /usr/local/bin/rtsp_url.txt
 echo "RTSP URL saved: $RTSP_URL"
-
-#rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2
