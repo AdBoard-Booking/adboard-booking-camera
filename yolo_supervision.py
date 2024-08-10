@@ -7,6 +7,11 @@ import threading
 import queue
 import time
 import requests
+import json
+import logging
+import os
+
+logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
 class RTSPDetector:
     def __init__(self, rtsp_url, model_path, frame_skip=2, api_url=None, api_key=None):
@@ -15,25 +20,57 @@ class RTSPDetector:
         self.frame_skip = frame_skip
         self.api_url = api_url
         self.api_key = api_key
+        # Load camera configuration
+        with open('registered_cameras.json', 'r') as f:
+            self.camera_config = json.load(f)
         
+        # Find matching camera config
+        self.camera_data = next((cam for cam in self.camera_config if cam['rtspUrl'] == self.rtsp_url), None)
+        if not self.camera_data:
+            raise ValueError(f"No matching camera configuration found for RTSP URL: {self.rtsp_url}")
+        
+        self.camera_ip = self.rtsp_url.split('@')[1].split('/')[0]
         self.model = YOLO(model_path)
         self.cap = cv2.VideoCapture(rtsp_url)
         self.tracker = sv.ByteTrack()
         self.counts = defaultdict(int)
-        self.total_car_count = 0
-        self.previous_car_count = 0
+        self.total_car_count = self.load_car_count()
+        self.previous_car_count = self.total_car_count
         self.unique_car_ids = set()
         self.frame_queue = queue.Queue(maxsize=5)
         self.result_queue = queue.Queue(maxsize=5)
         self.stop_flag = threading.Event()
         self.fps_list = []
         self.FPS_HISTORY_SIZE = 20
+        self.current_fps = 0
         self.inference_thread = threading.Thread(target=self.inference_loop)
         self.callbacks = {
             "on_detection": None,
             "on_total_count": None
         }
-        
+
+    def get_count_file_path(self):
+        return f"car_count_{self.camera_ip.replace('.', '_')}.json"
+
+    def load_car_count(self):
+        count_file = self.get_count_file_path()
+        if os.path.exists(count_file):
+            with open(count_file, 'r') as f:
+                data = json.load(f)
+                return data.get('total_car_count', 0)
+        return 0
+
+    def save_car_count(self):
+        count_file = self.get_count_file_path()
+        data = {
+            'total_car_count': self.total_car_count,
+            'last_updated': time.strftime("%Y-%m-%d %H:%M:%S"),
+            'device_id': self.camera_data['deviceId'],
+            'current_fps': self.current_fps
+        }
+        with open(count_file, 'w') as f:
+            json.dump(data, f, indent=4)
+    
     def set_callback(self, name, callback):
         if name in self.callbacks:
             self.callbacks[name] = callback
@@ -43,12 +80,22 @@ class RTSPDetector:
     def send_car_count_to_cloud(self, count):
         if self.api_url:
             try:
+                payload = {
+                    "carsCount": count,
+                    "deviceId": self.camera_data['deviceId'],
+                    "cameraIp": self.camera_ip,
+                    "fps": self.current_fps
+                }
+                headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+                headers["Content-Type"] = "application/json"
+                
                 response = requests.post(
                     self.api_url,
-                    json={"car_count": count},
-                    headers={"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+                    data=json.dumps(payload),
+                    headers=headers
                 )
                 response.raise_for_status()
+                self.save_car_count()  # Save the count after successful API call
             except requests.RequestException as e:
                 print(f"Failed to send car count to cloud: {e}")
     
@@ -116,9 +163,9 @@ class RTSPDetector:
         if len(self.fps_list) > self.FPS_HISTORY_SIZE:
             self.fps_list.pop(0)
 
-        avg_fps = np.mean(self.fps_list)
+        self.current_fps = np.mean(self.fps_list)
         cv2.putText(frame, f"Cars Passed: {self.total_car_count}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.putText(frame, f"FPS: {avg_fps:.2f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(frame, f"FPS: {self.current_fps:.2f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.imshow("YOLOv8 Multi-object Counting", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -139,6 +186,7 @@ class RTSPDetector:
         self.inference_thread.join()
         self.cap.release()
         cv2.destroyAllWindows()
+        self.save_car_count()  # Save the count when stopping
 
 # Usage Example
 def on_detection(tracked_detections, current_car_count):
@@ -150,7 +198,7 @@ def on_total_count(total_car_count):
 detector = RTSPDetector(
     rtsp_url="rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2",
     model_path="yolov8n.pt",
-    api_url="https://screens.adboardbooking.com/api/feed",
+    api_url="https://screens.adboardbooking.com/api/camera/feed",
     api_key="your-api-key"
 )
 

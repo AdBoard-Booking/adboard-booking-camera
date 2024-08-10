@@ -1,6 +1,26 @@
 #!/bin/bash
 
-sh scan_rtsp.sh
+FORCE=false
+while getopts "f" opt; do
+  case $opt in
+    f)
+      FORCE=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Check for /usr/local/bin/rtsp_url.txt, if empty or doesn't exist, call the scan with -f
+RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
+if [ ! -s "$RTSP_URL_FILE" ] || [ "$FORCE" = true ]; then
+    echo "Running scan with force option..."
+    sudo sh scan_rtsp.sh -f
+else
+    sudo sh scan_rtsp.sh
+fi
 
 # Function to check if a command exists
 command_exists () {
@@ -22,10 +42,6 @@ generate_hash() {
 get_private_ip() {
     hostname -I | awk '{print $1}'
 }
-
-cd /home/pi/adboard-booking-camera
-git fetch
-git reset --hard origin/main
 
 # File to store the RTSP URL
 RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
@@ -63,9 +79,13 @@ chmod -R 755 $HLS_DIR
 DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)
 echo "Using CPU serial number as device ID: $DEVICE_ID"
 
-echo "Registering Pitunnel..."
-pitunnel --remove 1
-pitunnel --port=80 --http --name=$DEVICE_ID --persist
+# Only run pitunnel if -f is passed
+if [ "$FORCE" = true ]; then
+    echo "Registering Pitunnel..."
+    pitunnel --remove 1
+    pitunnel --port=80 --http --name=$DEVICE_ID --persist
+fi
+
 
 # Register the device with the server
 REGISTER_URL="https://railway.adboardbooking.com/api/camera/register"
@@ -79,20 +99,17 @@ echo "Stream URL: $CAMERA_URL"
 
 HOSTNAME=$(hostname)
 
-echo '{
+# Create the POST body and save it to a file
+POST_BODY='{
   "deviceId": "'"$DEVICE_ID"'",
   "rtspUrl": "'"$RTSP_URL"'",
+  "hostName": "'"$HOSTNAME"'",
   "publicIp": "'"$PUBLIC_IP"'",
   "privateIp": "'"$PRIVATE_IP"'",
-  "hostName": "'"$HOSTNAME"'",
   "cameraUrl": "'"$CAMERA_URL"'"
 }'
 
-curl -X POST -H "Content-Type: application/json" -d '{
-  "deviceId": "'"$DEVICE_ID"'",
-  "rtspUrl": "'"$RTSP_URL"'",
-  "hostName": "'"$HOSTNAME"'",
-  "publicIp": "'"$PUBLIC_IP"'",
-  "privateIp": "'"$PRIVATE_IP"'",
-  "cameraUrl": "'"$CAMERA_URL"'"
-}' $REGISTER_URL
+echo "[$POST_BODY]" | tee /usr/local/bin/registered_cameras.json
+echo "[$POST_BODY]" | tee ./registered_cameras.json
+
+curl -X POST -H "Content-Type: application/json" -d "$POST_BODY" $REGISTER_URL
