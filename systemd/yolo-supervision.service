@@ -1,0 +1,14 @@
+[Unit]
+Description=YOLO Supervision Lite Service
+After=network.target
+
+[Service]
+ExecStart=/home/pi/.pyenv/versions/3.9.19/bin/python /home/pi/adboard-booking-camera/yolo_supervision_lite.py
+WorkingDirectory=/home/pi/adboard-booking-camera/
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target 
