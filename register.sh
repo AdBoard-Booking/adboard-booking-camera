@@ -91,6 +91,9 @@ fi
 REGISTER_URL="https://railway.adboardbooking.com/api/camera/register"
 PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
 PRIVATE_IP=$(get_private_ip)
+CAMERA_IP=$(echo "$rtspUrl" | cut -d'@' -f2 | cut -d'/' -f1)
+HOSTNAME=$(hostname)
+USERNAME=${whoami}
 
 echo "Registering device with server..."
 
@@ -103,11 +106,14 @@ HOSTNAME=$(hostname)
 POST_BODY='{
   "deviceId": "'"$DEVICE_ID"'",
   "rtspUrl": "'"$RTSP_URL"'",
+  "hostName: "'"$HOSTNAME"'",
+  "userName: "'"$USERNAME"'",
+  "cameraIp": "'"$CAMERA_IP"'",
   "hostName": "'"$HOSTNAME"'",
   "publicIp": "'"$PUBLIC_IP"'",
   "privateIp": "'"$PRIVATE_IP"'",
   "cameraUrl": "'"$CAMERA_URL"'"
-}'
+}' 
 
 echo "[$POST_BODY]" | tee /usr/local/bin/registered_cameras.json
 echo "[$POST_BODY]" | tee ./registered_cameras.json

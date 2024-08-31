@@ -1,8 +1,0 @@
-[{
-  "deviceId": "d91b9fc0ca24dc20",
-  "rtspUrl": "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2",
-  "hostName": "raspberrypi",
-  "publicIp": "49.47.68.165",
-  "privateIp": "192.168.29.128",
-  "cameraUrl": "https://d91b9fc0ca24dc20-ankurkus.in1.pitunnel.com/?hash=655200ed425a70cec9ca6f8c520e80c8"
-}]
