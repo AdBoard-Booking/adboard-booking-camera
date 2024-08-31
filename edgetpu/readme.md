@@ -24,3 +24,10 @@ pyenv global 3.10
 
 python -m venv venv
 ```
+
+## detect if service is running
+
+sudo sh ./setup.sh //this will setup the camera feed
+
+
+sudo sh ./register.sh  // register camerea
