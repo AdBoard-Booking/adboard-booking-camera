@@ -21,10 +21,6 @@ get_private_ip() {
     hostname -I | awk '{print $1}'
 }
 
-cd /home/pi/adboard-booking-camera
-git fetch
-git reset --hard origin/main
-
 # File to store the RTSP URL
 RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
 
@@ -56,42 +52,6 @@ fi
 # Ensure the directory has correct permissions
 chown -R root:root $HLS_DIR
 chmod -R 755 $HLS_DIR
-
-# Get the CPU serial number as the device ID
-DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)
-echo "Using CPU serial number as device ID: $DEVICE_ID"
-
-# Register the device with the server
-REGISTER_URL="https://railway.adboardbooking.com/api/camera/register"
-PUBLIC_IP=$(curl -s http://whatismyip.akamai.com/)
-PRIVATE_IP=$(get_private_ip)
-
-echo "Registering device with server..."
-
-CAMERA_URL="https://$DEVICE_ID-ankurkus.in1.pitunnel.com/?hash=$HASH"
-echo "Stream URL: $CAMERA_URL"
-
-HOSTNAME=$(hostname)
-
-echo '{
-  "deviceId": "'"$DEVICE_ID"'",
-  "rtspUrl": "'"$RTSP_URL"'",
-  "publicIp": "'"$PUBLIC_IP"'",
-  "privateIp": "'"$PRIVATE_IP"'",
-  "hostName": "'"$HOSTNAME"'",
-  "cameraUrl": "'"$CAMERA_URL"'"
-}'
-
-curl -X POST -H "Content-Type: application/json" -d '{
-  "deviceId": "'"$DEVICE_ID"'",
-  "rtspUrl": "'"$RTSP_URL"'",
-  "hostName": "'"$HOSTNAME"'",
-  "publicIp": "'"$PUBLIC_IP"'",
-  "privateIp": "'"$PRIVATE_IP"'",
-  "cameraUrl": "'"$CAMERA_URL"'"
-}' $REGISTER_URL
-
-echo "Setup complete. You can now access the stream via the Pitunnel URL provided."
 
 # Log file for FFmpeg
 LOG_FILE="/var/log/ffmpeg_stream.log"
