@@ -154,12 +154,10 @@ sudo mkdir /usr/local/bin/adboardbooking
 sudo cp ./run_on_boot.sh /usr/local/bin/adboardbooking/run_on_boot.sh
 sudo cp ./start_ffmpeg.sh /usr/local/bin/adboardbooking/start_ffmpeg.sh
 sudo cp ./scan_rtsp.sh /usr/local/bin/adboardbooking/scan_rtsp.sh
-sudo cp ./yolo_supervision_lite.py /usr/local/bin/adboardbooking/yolo_supervision_lite.sh
+sudo cp ./yolo_supervision_lite.py /usr/local/bin/adboardbooking/yolo_supervision_lite.py
 
-# Change permissions
-sudo chmod +x /usr/local/bin/adboardbooking/run_on_boot.sh
-sudo chmod +x /usr/local/bin/adboardbooking/start_ffmpeg.sh
-sudo chmod +x /usr/local/bin/adboardbooking/scan_rtsp.sh
+sudo chmod +x /usr/local/bin/adboardbooking/*.sh
+sudo chmod +x /usr/local/bin/adboardbooking/*.py
 
 # Copy service files
 sudo cp adboardbooking.service /etc/systemd/system/adboardbooking.service

@@ -1,5 +1,4 @@
 #!/bin/bash
 
-sudo sh ./scan_rtsp.sh
-sudo sh ./start_ffmpeg.sh &
-python ./yolo_supervision_lite.py
+sudo sh /usr/local/bin/adboardbooking/scan_rtsp.sh
+sudo sh /usr/local/bin/adboardbooking/start_ffmpeg.sh
