@@ -204,7 +204,7 @@ def on_total_count(total_car_count):
 
 detector = RTSPDetector(
     rtsp_url="rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2",
-    model_path="yolov8n.pt",
+    model_path="/home/pi/adboard-booking-camera/CameraStreamingAI/yolov8n.pt",
     api_url="https://railway.adboardbooking.com/api/camera/feed",
     api_key="your-api-key",
     api_interval=5  # Set the interval to 5 minutes
