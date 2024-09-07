@@ -8,7 +8,7 @@ command_exists () {
 # Ensure the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
   echo "Please run as root"
-  exit
+  exit 1
 fi
 
 # Function to generate a hash from the RTSP URL
@@ -21,23 +21,24 @@ get_private_ip() {
     hostname -I | awk '{print $1}'
 }
 
-# File to store the RTSP URL
-RTSP_URL_FILE="/usr/local/bin/rtsp_url.txt"
+# File to store the camera data
+CAMERA_DATA_FILE="/usr/local/bin/adboardbooking/registered_cameras.json"
 
-# Check if RTSP URL is provided as a command-line argument
-if [ -z "$1" ]; then
-  if [ ! -f "$RTSP_URL_FILE" ]; then
-    echo "Usage: $0 <RTSP_URL>"
+# Check if the camera data file exists
+if [ ! -f "$CAMERA_DATA_FILE" ]; then
+    echo "Error: $CAMERA_DATA_FILE not found."
     exit 1
-  else
-    RTSP_URL=$(cat $RTSP_URL_FILE)
-    echo "Using RTSP URL from file: $RTSP_URL"
-  fi
-else
-  RTSP_URL=$1
-  echo "Saving RTSP URL to file: $RTSP_URL"
-  echo $RTSP_URL > $RTSP_URL_FILE
 fi
+
+# Read RTSP URL from the JSON file
+RTSP_URL=$(jq -r '.[0].rtspUrl' "$CAMERA_DATA_FILE")
+
+if [ -z "$RTSP_URL" ] || [ "$RTSP_URL" == "null" ]; then
+    echo "Error: Failed to read RTSP URL from $CAMERA_DATA_FILE"
+    exit 1
+fi
+
+echo "Using RTSP URL: $RTSP_URL"
 
 # Generate a hash from the RTSP URL
 HASH=$(generate_hash "$RTSP_URL")
@@ -73,21 +74,19 @@ done
 
 # Start FFmpeg to transcode RTSP to HLS
 echo "Starting FFmpeg to transcode RTSP to HLS..."
-KILL_INTERVAL="10m"         # Interval to kill ffmpeg process (e.g., 10m for 10 minutes)
+SLEEP_TIME="1m"
 
 echo "$(date) - Starting ffmpeg..." | tee -a $LOG_FILE
     
 # Start ffmpeg process in the background
 ffmpeg -i $RTSP_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -hls_segment_filename "$HLS_DIR/segment_%03d.ts" -f hls $HLS_DIR/stream.m3u8 >> $LOG_FILE 2>&1 &
-FFMPG_PID=$!
-
-SLEEP_TIME="1m"
+FFMPEG_PID=$!
 
 # Get the last modification time of the file
 LAST_MODIFICATION=$(stat -c %s "$LOG_FILE")
 
 while true; do
-    echo "$(date) - Slepping for $SLEEP_TIME"
+    echo "$(date) - Sleeping for $SLEEP_TIME"
     # Wait for specified time
     sleep $SLEEP_TIME
 
@@ -97,7 +96,8 @@ while true; do
     # Compare the last modification time with the current modification time
     if [[ $LAST_MODIFICATION == $CURRENT_MODIFICATION ]]; then
         echo "$(date) - Log file has not been updated. Exiting." 
-        # Command to kill the process or perform any action needed
+        # Kill the ffmpeg process
+        kill $FFMPEG_PID
         exit 1
     else
         echo "$(date) - Log file has been updated. Current: $CURRENT_MODIFICATION, Last: $LAST_MODIFICATION"
@@ -105,4 +105,3 @@ while true; do
         LAST_MODIFICATION=$CURRENT_MODIFICATION
     fi
 done
- 

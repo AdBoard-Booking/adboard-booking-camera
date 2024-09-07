@@ -6,7 +6,7 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-sudo apt install nmap nginx -y
+sudo apt install nmap nginx jq -y
 sudo sh ./scan_rtsp.sh 
 
 # Configure Nginx to serve HLS
@@ -150,19 +150,25 @@ pitunnel --remove 1
 pitunnel --port=80 --http --name=$DEVICE_ID --persist
 
 # Copy scripts to /usr/local/bin
-sudo cp ./start_ffmpeg.sh /usr/local/bin/start_ffmpeg.sh
+sudo mkdir /usr/local/bin/adboardbooking
+sudo cp ./run_on_boot.sh /usr/local/bin/adboardbooking/run_on_boot.sh
+sudo cp ./start_ffmpeg.sh /usr/local/bin/adboardbooking/start_ffmpeg.sh
+sudo cp ./scan_rtsp.sh /usr/local/bin/adboardbooking/scan_rtsp.sh
+sudo cp ./yolo_supervision_lite.py /usr/local/bin/adboardbooking/yolo_supervision_lite.sh
 
 # Change permissions
-sudo chmod +x /usr/local/bin/start_ffmpeg.sh
+sudo chmod +x /usr/local/bin/adboardbooking/run_on_boot.sh
+sudo chmod +x /usr/local/bin/adboardbooking/start_ffmpeg.sh
+sudo chmod +x /usr/local/bin/adboardbooking/scan_rtsp.sh
 
 # Copy service files
-sudo cp ffmpeg.service /etc/systemd/system/ffmpeg.service
+sudo cp adboardbooking.service /etc/systemd/system/adboardbooking.service
 
 # Reload systemd daemon
 systemctl daemon-reload
 
 # Enable and start services
-systemctl enable ffmpeg.service
-systemctl start ffmpeg.service
+systemctl enable adboardbooking.service
+systemctl start adboardbooking.service
 
 echo "Setup complete. Services are running."

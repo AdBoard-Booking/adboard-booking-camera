@@ -20,3 +20,5 @@ start_ffmpeg.sh
 ffmpeg.service
 * This is a systemctl file, required for configuring auto boot service
 
+Python 3.9.19
+

@@ -3,7 +3,7 @@ Description=FFmpeg RTSP to HLS Streaming Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/start_ffmpeg.sh
+ExecStart=/usr/local/bin/adboardbooking/run_on_boot.sh
 Restart=always
 RestartSec=10
 StandardOutput=file:/var/log/ffmpeg_stream.log
