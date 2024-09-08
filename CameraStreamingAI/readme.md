@@ -24,4 +24,9 @@ Python 3.9.19
 
 sudo sh ./setup.sh 
 sudo journalctl -u adboardbookingai.service -n 50
+
+sudo systemctl stop adboardbookingai.service
+sudo systemctl start adboardbookingai.service
 sudo systemctl status adboardbookingai.service
+
+cat /var/log/adboardbookingai_stream.err

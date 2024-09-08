@@ -52,7 +52,7 @@ class RTSPDetector:
         }
 
     def get_count_file_path(self):
-        return f"car_count_{self.camera_ip.replace('.', '_')}.json"
+        return f"/home/pi/adboard-booking-camera/CameraStreamingAI/car_count_{self.camera_ip.replace('.', '_')}.json"
 
     def load_car_count(self):
         count_file = self.get_count_file_path()
