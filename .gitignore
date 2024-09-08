@@ -1,3 +1,5 @@
 node_modules
 venv
 car_count*
+CameraStreamingAI/output
+CameraStreamingAI/billboard_data.json
