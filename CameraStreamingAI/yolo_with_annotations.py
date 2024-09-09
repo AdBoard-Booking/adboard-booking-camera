@@ -5,8 +5,6 @@ import time
 import os
 from ultralytics import YOLO
 import logging
-import threading
-from process_billboard_data import process_billboard_data  # Import the function
 
 logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
@@ -54,11 +52,6 @@ def process_frame(frame):
     
     return frame, detected_objects
 
-def periodic_processing():
-    while True:
-        process_billboard_data()  # Call the function from process_billboard_data.py
-        time.sleep(600)  # Sleep for 10 minutes (600 seconds)
-
 def save_data(timestamp, objects, filename='/home/pi/adboard-booking-camera/CameraStreamingAI/billboard_data.json'):
     
     # Load existing data
@@ -91,10 +84,6 @@ def save_data(timestamp, objects, filename='/home/pi/adboard-booking-camera/Came
 def main():
     last_process_time = 0
 
-    # Start the periodic processing in a separate thread
-    processing_thread = threading.Thread(target=periodic_processing, daemon=True)
-    processing_thread.start()
-    
     while True:
         ret, frame = cap.read()
         if not ret:
