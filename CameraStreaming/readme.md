@@ -22,3 +22,8 @@ ffmpeg.service
 
 Python 3.9.19
 
+sudo systemctl stop adboardbooking.service
+sudo systemctl start adboardbooking.service
+sudo systemctl status adboardbooking.service
+
+ tail -f /var/log/ffmpeg_stream.log

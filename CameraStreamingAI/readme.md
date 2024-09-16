@@ -25,6 +25,9 @@ Python 3.9.19
 sudo sh ./setup.sh 
 sudo journalctl -u adboardbookingai.service -n 50
 
+/usr/local/bin/adboardbooking/registered_cameras.json
+
+code /home/pi/adboard-booking-camera/CameraStreamingAI/billboard_data.json
 sudo systemctl stop adboardbookingai.service
 sudo systemctl start adboardbookingai.service
 sudo systemctl status adboardbookingai.service
