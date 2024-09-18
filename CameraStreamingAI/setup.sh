@@ -9,7 +9,7 @@ fi
 # Copy scripts to /usr/local/bin
 sudo mkdir /usr/local/bin/adboardbookingai
 sudo cp ./run_on_boot.sh /usr/local/bin/adboardbookingai/run_on_boot.sh
-sudo cp ./yolo_with_annotations.py /usr/local/bin/adboardbookingai/yolo_with_annotations.py
+sudo cp ./yolo_across_frame_cmd.py /usr/local/bin/adboardbookingai/yolo_across_frame_cmd.py
 sudo cp ./process_billboard_data.py /usr/local/bin/adboardbookingai/process_billboard_data.py
 
 # Change permissions

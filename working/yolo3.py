@@ -7,7 +7,7 @@ import threading
 import queue
 
 # Initialize YOLOv8 model
-model = YOLO("yolov8n.pt")
+model = YOLO("yolov5s.pt")
 
 # Initialize the video capture from RTSP stream
 cap = cv2.VideoCapture("rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2")
