@@ -4,3 +4,4 @@ car_count*
 CameraStreamingAI/output
 output
 CameraStreamingAI/billboard_data.json
+*.pt
