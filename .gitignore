@@ -5,3 +5,4 @@ CameraStreamingAI/output
 output
 CameraStreamingAI/billboard_data.json
 *.pt
+node_modules

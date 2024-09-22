@@ -50,15 +50,15 @@ else
   SCAN_RESULTS=$(nmap -p 554 --open $NETWORK_PREFIX/24 -oG - | awk '/554\/open/ {print $2}')
 
   # Check for RTSP streams with the specified format
-  RTSP_URL=""
-  for IP in $SCAN_RESULTS; do
-      TEST_URL="rtsp://adboardbooking:adboardbooking@$IP/stream2"
-      if ffmpeg -i $TEST_URL -t 1 -f null - 2>&1 | grep -q "Input #0"; then
-          RTSP_URL=$TEST_URL
-          CAMERA_IP=$IP
-          break
-      fi
-  done
+  RTSP_URL="rtps://192.168.29.204/stream2"
+  # for IP in $SCAN_RESULTS; do
+  #     TEST_URL="rtsp://adboardbooking:adboardbooking@$IP/stream2"
+  #     if ffmpeg -i $TEST_URL -t 1 -f null - 2>&1 | grep -q "Input #0"; then
+  #         RTSP_URL=$TEST_URL
+  #         CAMERA_IP=$IP
+  #         break
+  #     fi
+  # done
 
   # Ensure RTSP URL is found
   if [ -z "$RTSP_URL" ]; then
@@ -68,7 +68,7 @@ else
 
   # Generate a device ID from CPU info
   DEVICE_ID=$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)
-
+  
   # Get the hostname
   HOST_NAME=$(hostname)
 
