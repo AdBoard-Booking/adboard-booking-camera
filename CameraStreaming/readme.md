@@ -22,10 +22,13 @@ ffmpeg.service
 
 # Python 3.9.19
 curl https://pyenv.run | bash
+
 echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
 echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
 echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-sudo apt-get install build-essential zlib1g-dev libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev libncurses-dev tk-dev 
+
+sudo apt-get install bzip2 ncurses libffi readline OpenSSL
+
 pyenv install 3.9
 pyenv global 3.9
 
