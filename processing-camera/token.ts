@@ -1,1 +1,0 @@
-export const API_TOKEN: string = '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';
