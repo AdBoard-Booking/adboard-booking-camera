@@ -7,7 +7,7 @@
 <body>
     <video id="video" controls autoplay style="width: 100%; max-width: 600px;"></video>
     <script>
-        let url = new URLSearchParams(window.location.search).get('url')||'http://172.23.209.220:8080/stream/live.m3u8'
+        let url = new URLSearchParams(window.location.search).get('url')||'/stream/live.m3u8'
 
         if (Hls.isSupported()) {
             var video = document.getElementById('video');

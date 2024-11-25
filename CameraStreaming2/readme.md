@@ -1,12 +1,10 @@
 sudo apt update
-sudo apt install nginx -y
-
-sudo systemctl restart nginx
-sudo nginx -t
-
-sudo nano /etc/systemd/system/ffmpeg-stream.service
+sudo apt install nginx ffmpeg -y
 
 CameraIP: rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
+
+sudo nano /etc/systemd/system/ffmpeg-stream.service
+sudo mkdir  /var/www/stream/
 
 ```
 [Unit]
@@ -25,18 +23,16 @@ User=root
 WantedBy=multi-user.target
 ```
 
-Enable service
-```
+
 sudo systemctl enable ffmpeg-stream
 sudo systemctl start ffmpeg-stream
-```
+sudo systemctl status ffmpeg-stream
 
-
-NGINX_CONF= /etc/nginx/sites-available/default 
+sudo nano /etc/nginx/sites-available/default 
 
 ```
 server {
-    listen 8080;
+    listen 80;
 
     # Add a Content Security Policy
     add_header Content-Security-Policy "frame-ancestors 'self' http://localhost https://*.adboardbooking.com";
@@ -53,6 +49,11 @@ server {
         index index.html index.htm;
     }
 
+    location /camera {
+        root /var/www/stream;
+        hls.html
+    }
+
     location /stream {
         types {
             application/vnd.apple.mpegurl m3u8;
@@ -62,3 +63,6 @@ server {
     }
 }
 
+sudo nginx -t
+sudo systemctl restart nginx
+sudo systemctl status nginx
