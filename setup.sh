@@ -5,6 +5,10 @@ echo "Updating system and installing dependencies..."
 sudo apt update
 sudo apt install -y nginx ffmpeg
 
+# Get camera URL from user
+CAMERA_URL="${1:-rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2}"
+echo "Using camera URL: $CAMERA_URL"
+
 # Set up directories for streaming
 echo "Creating streaming directory..."
 sudo mkdir -p /var/www/stream/
@@ -15,7 +19,7 @@ cat <<EOL | sudo tee /var/www/stream/hls.html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HLS Player</title>
+    <title>Camera stream</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
@@ -52,7 +56,7 @@ Description=FFmpeg RTSP to HLS Stream
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/ffmpeg -i rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2 -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -f hls /var/www/stream/live.m3u8
+ExecStart=/usr/bin/ffmpeg -i $CAMERA_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -f hls /var/www/stream/live.m3u8
 Restart=always
 RestartSec=10
 StandardOutput=file:/var/log/ffmpeg_stream.log
@@ -106,10 +110,9 @@ EOL
 # Test and restart Nginx
 echo "Testing Nginx configuration..."
 sudo nginx -t
-
 if [ $? -eq 0 ]; then
     echo "Restarting Nginx..."
-    sudo systemctl restart nginx
+    sudo systemctl reload nginx
 else
     echo "Nginx configuration test failed. Please check the configuration file."
     exit 1

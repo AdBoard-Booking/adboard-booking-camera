@@ -3,8 +3,9 @@ sudo apt install nginx ffmpeg -y
 
 CameraIP: rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
 
+
+sudo mkdir /var/www/stream/
 sudo nano /etc/systemd/system/ffmpeg-stream.service
-sudo mkdir  /var/www/stream/
 
 ```
 [Unit]
@@ -29,6 +30,7 @@ sudo systemctl start ffmpeg-stream
 sudo systemctl status ffmpeg-stream
 
 sudo nano /etc/nginx/sites-available/default 
+
 
 ```
 server {
@@ -63,6 +65,7 @@ server {
     }
 }
 
-sudo nginx -t
+//check config
+sudo nginx -t 
 sudo systemctl restart nginx
 sudo systemctl status nginx
