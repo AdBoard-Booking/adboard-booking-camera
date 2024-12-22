@@ -19,7 +19,7 @@ cat <<EOL | sudo tee /var/www/stream/hls.html
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-    <video id="video" controls autoplay style="width: 100%; max-width: 600px;"></video>
+    <video id="video" controls autoplay style="width: 100%;"></video>
     <script>
         let url = new URLSearchParams(window.location.search).get('url')||'/stream/live.m3u8'
 
