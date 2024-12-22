@@ -68,10 +68,6 @@ echo "Enabling and starting FFmpeg service..."
 sudo systemctl enable ffmpeg-stream
 sudo systemctl start ffmpeg-stream
 
-# Check FFmpeg service status
-echo "Checking FFmpeg service status..."
-sudo systemctl status ffmpeg-stream
-
 # Configure Nginx
 echo "Configuring Nginx..."
 cat <<EOL | sudo tee /etc/nginx/sites-available/default
