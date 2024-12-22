@@ -6,7 +6,7 @@ sudo apt update
 sudo apt install -y nginx ffmpeg
 
 # Get camera URL from user
-CAMERA_URL="${1:-rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2}"
+CAMERA_URL="${1:-${CAMERA_URL:-rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2}}"
 echo "Using camera URL: $CAMERA_URL"
 
 # Set up directories for streaming

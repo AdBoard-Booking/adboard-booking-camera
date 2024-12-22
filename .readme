@@ -1,20 +1,10 @@
-# Adboard booking camera
+## Installation
 
 
-# Setup Streaming on Raspberry Pi
-
-This repository contains a script (`setup_streaming.sh`) that sets up streaming on a Raspberry Pi. The script discovers RTSP streams on the local network, configures HLS streaming, and makes the stream accessible via Pitunnel.
-
-### Steps to setup camera
-git clone https://github.com/AdBoard-Booking/adboard-booking-camera
-cd adboard-booking-camera
-
-sudo apt-get install nmap
-
-git fetch
-git reset --hard origin/main
-sudo sh ./setup.sh
 
 
-FFmpeg logs: /var/log/ffmpeg_stream.log and /var/log/ffmpeg_stream.err
+```
+Example: rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
 
+CAMERA_URL="rtsp://your_camera_url_here" wget -qO- https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/setup.sh | sudo bash
+```
