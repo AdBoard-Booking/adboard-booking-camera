@@ -93,7 +93,7 @@ server {
     }
 
     location /camera {
-        root /var/www/stream;
+        alias /var/www/stream/;
         index hls.html;
     }
 
@@ -110,6 +110,7 @@ EOL
 # Test and restart Nginx
 echo "Testing Nginx configuration..."
 sudo nginx -t
+
 if [ $? -eq 0 ]; then
     echo "Restarting Nginx..."
     sudo systemctl restart nginx
@@ -120,6 +121,5 @@ fi
 
 # Check Nginx status
 echo "Checking Nginx status..."
-sudo systemctl status nginx
 
 echo "Setup completed successfully."
