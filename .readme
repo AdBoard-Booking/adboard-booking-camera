@@ -8,3 +8,9 @@ Example: rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
 
 CAMERA_URL="rtsp://your_camera_url_here" wget -qO- https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/setup.sh | sudo bash
 ```
+
+
+sudo nano /etc/nginx/sites-available/default
+sudo nginx -t
+sudo systemctl reload nginx
+http://192.168.29.225/proxy/172.23.182.242/camera

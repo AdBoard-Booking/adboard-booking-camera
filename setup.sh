@@ -3,11 +3,44 @@
 # Update and install required packages
 echo "Updating system and installing dependencies..."
 sudo apt update
-sudo apt install -y nginx ffmpeg
+sudo apt install -y nginx ffmpeg curl
 
-# Get camera URL from user
-CAMERA_URL="${1:-${CAMERA_URL:-rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2}}"
-echo "Using camera URL: $CAMERA_URL"
+# Install and configure ZeroTier
+echo "Installing ZeroTier..."
+curl -s https://install.zerotier.com | sudo bash
+echo "Joining ZeroTier network..."
+sudo zerotier-cli join 48d6023c46a723d4
+
+# Wait for ZeroTier to assign an IP address
+echo "Waiting for ZeroTier to assign an IP address..."
+sleep 10
+
+# Retrieve ZeroTier IP address using ZeroTier CLI
+ZEROTIER_IP=$(sudo zerotier-cli listnetworks | awk '/48d6023c46a723d4/ {print $NF}')
+echo "ZeroTier IP Address: $ZEROTIER_IP"
+
+# Get Workspace ID and Camera URL from environment variables
+WORKSPACE_ID=${WORKSPACE_ID:-""}
+CAMERA_URL=${CAMERA_URL:-""}
+
+if [ -z "$WORKSPACE_ID" ]; then
+  echo "Error: WORKSPACE_ID is not set. Please export it as an environment variable."
+  exit 1
+fi
+
+if [ -z "$CAMERA_URL" ]; then
+  echo "Error: CAMERA_URL is not set. Please export it as an environment variable."
+  exit 1
+fi
+
+echo "Using Workspace ID: $WORKSPACE_ID"
+echo "Using Camera URL: $CAMERA_URL"
+
+# Register camera with the server
+REGISTRATION_RESPONSE=$(curl -s -X POST https://api.adboardbooking.com/register/camera \
+    -H "Content-Type: application/json" \
+    -d '{"workspaceId": "'$WORKSPACE_ID'", "cameraUrl": "'$CAMERA_URL'", "zerotierIp": "'$ZEROTIER_IP'"}')
+echo "Registration Response: $REGISTRATION_RESPONSE"
 
 # Set up directories for streaming
 echo "Creating streaming directory..."
@@ -120,5 +153,4 @@ fi
 
 # Check Nginx status
 echo "Checking Nginx status..."
-
 echo "Setup completed successfully."
