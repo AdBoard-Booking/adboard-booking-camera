@@ -37,7 +37,7 @@ echo "Using Workspace ID: $WORKSPACE_ID"
 echo "Using Camera URL: $CAMERA_URL"
 
 # Register camera with the server
-REGISTRATION_RESPONSE=$(curl -s -X POST https://api.adboardbooking.com/register/camera \
+REGISTRATION_RESPONSE=$(curl -s -X POST https://api.adboardbooking.com/camera/register \
     -H "Content-Type: application/json" \
     -d '{"workspaceId": "'$WORKSPACE_ID'", "cameraUrl": "'$CAMERA_URL'", "zerotierIp": "'$ZEROTIER_IP'"}')
 echo "Registration Response: $REGISTRATION_RESPONSE"
