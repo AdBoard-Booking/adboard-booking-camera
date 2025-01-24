@@ -27,21 +27,21 @@ def get_cpu_serial():
         print(f"[ERROR] Unable to read CPU serial: {e}")
     return "UNKNOWN"
 
-def load_passed_count(filename):
-    """Load passed count from a file."""
+def load_detection_batch(filename):
+    """Load detection batch from a file."""
     try:
         with open(filename, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return {"car": 0, "person": 0}
+        return []
 
-def save_passed_count(filename, passed_count):
-    """Save passed count to a file."""
+def save_detection_batch(filename, detection_batch):
+    """Save detection batch to a file."""
     try:
         with open(filename, "w") as f:
-            json.dump(passed_count, f)
+            json.dump(detection_batch, f)
     except Exception as e:
-        print(f"[ERROR] Unable to save passed count: {e}")
+        print(f"[ERROR] Unable to save detection batch: {e}")
 
 def load_config(device_id):
     """Load configuration from the API."""
@@ -55,7 +55,7 @@ def load_config(device_id):
         print(f"[ERROR] Unable to load config: {e}")
         return None
 
-def api_worker(queue, endpoint, passed_count_file):
+def api_worker(queue, endpoint, detection_batch_file):
     """Worker thread to send API requests."""
     while True:
         batch = queue.get()  # Get a batch from the queue
@@ -67,8 +67,7 @@ def api_worker(queue, endpoint, passed_count_file):
             response = requests.post(endpoint, json={"data": batch}, timeout=5)
             if response.status_code == 200:
                 print(f"[INFO] Batch sent successfully: {len(batch)}")
-                # Save the latest passed count after a successful API call
-                save_passed_count(passed_count_file, batch[-1]["passedCount"])
+                save_detection_batch(detection_batch_file, [])  # Clear the file after successful API call
             else:
                 print(f"[WARN] API returned: {response.status_code}, {response.text}")
                 # Re-add batch to the queue for retry
@@ -96,10 +95,10 @@ def main():
     INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
     LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
     API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
-    BATCH_SIZE = config.get("batchSize", 10)
+    SAVE_INTERVAL = config.get("saveInterval", 10)  # Save to file every 10 minutes (600 seconds)
     API_CALL_INTERVAL = config.get("apiCallInterval", 300)
-    count_window_size =  config.get("countWindowSize", 5)
-    PASSED_COUNT_FILE = "passed_count.json"
+    count_window_size = config.get("countWindowSize", 5)
+    DETECTION_BATCH_FILE = "detection_batch.json"
 
     print(f"[INFO] Loaded configuration: {config}")
 
@@ -111,15 +110,19 @@ def main():
         return
 
     last_inference_time = 0
+    last_save_time = time.time()
     last_api_call_time = time.time()
 
     # Variables for our naive logic
-    passed_count = load_passed_count(PASSED_COUNT_FILE)
+    detection_batch = load_detection_batch(DETECTION_BATCH_FILE)
+    if detection_batch:
+        passed_count = detection_batch[-1]["passedCount"]
+    else:
+        passed_count = {"car": 0, "person": 0}
     print(f"[INFO] Loaded passed count: {passed_count}")
     last_increase_time = time.time()
 
     # We'll keep a short history (window) of detection counts to smooth out flickers
-    
     count_window = {"car": [], "person": []}
 
     # We also store a "stable_count" from the previous loop to compare changes
@@ -127,10 +130,8 @@ def main():
 
     # Queue for API requests
     api_queue = queue.Queue()
-    api_thread = threading.Thread(target=api_worker, args=(api_queue, API_ENDPOINT, PASSED_COUNT_FILE), daemon=True)
+    api_thread = threading.Thread(target=api_worker, args=(api_queue, API_ENDPOINT, DETECTION_BATCH_FILE), daemon=True)
     api_thread.start()
-
-    detection_batch = []
 
     while True:
         ret, frame = cap.read()
@@ -193,20 +194,24 @@ def main():
             prev_stable_count = stable_count
 
             ################################
-            # Add to batch and save every BATCH_SIZE
+            # Add to batch only if stableCount > 0
             ################################
-            detection_batch.append({
-                "cameraUrl": RTSP_STREAM_URL,
-                "deviceId": DEVICE_ID,
-                "timestamp": int(current_time),
-                "rawCount": raw_count,
-                "stableCount": stable_count,
-                "passedCount": passed_count
-            })
+            if any(stable_count[obj] > 0 for obj in stable_count):
+                detection_batch.append({
+                    "cameraUrl": RTSP_STREAM_URL,
+                    "deviceId": DEVICE_ID,
+                    "timestamp": int(current_time),
+                    "rawCount": raw_count,
+                    "stableCount": stable_count,
+                    "passedCount": passed_count
+                })
 
-            if len(detection_batch) >= BATCH_SIZE:
-                save_passed_count(PASSED_COUNT_FILE, passed_count)
-                detection_batch.clear()
+            ################################
+            # Save detection batch every SAVE_INTERVAL
+            ################################
+            if (current_time - last_save_time) >= SAVE_INTERVAL:
+                save_detection_batch(DETECTION_BATCH_FILE, detection_batch)
+                last_save_time = current_time
 
             ################################
             # Make API call every API_CALL_INTERVAL
@@ -216,7 +221,7 @@ def main():
                 detection_batch.clear()
                 last_api_call_time = current_time
 
-            print(f"[DEBUG] raw_count={raw_count}, stable_count={stable_count}, passed={passed_count}")
+            print(f"[{int(current_time)*1000}] raw_count={raw_count}, stable_count={stable_count}, passed={passed_count}, detection_batch={len(detection_batch)}")
 
         if detections is not None and ENABLE_BOUNDING_BOX and ENABLE_IMG_SHOW:
             for box in detections:
@@ -229,26 +234,26 @@ def main():
 
                 # We can draw bounding boxes for *any* class or specifically for "car".
                 if class_name == "car":
-                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
 
-                        # Draw rectangle
-                        color = (0, 255, 0)  # BGR: green
-                        thickness = 2
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)
+                    # Draw rectangle
+                    color = (0, 255, 0)  # BGR: green
+                    thickness = 2
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)
 
-                        # Label text with class and confidence
-                        label_text = f"{class_name} {conf:.2f}"
-                        font_scale = 0.5
-                        font_thickness = 1
-                        cv2.putText(
-                            frame,
-                            label_text,
-                            (x1, max(0, y1 - 5)),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            font_scale,
-                            color,
-                            font_thickness
-                        )
+                    # Label text with class and confidence
+                    label_text = f"{class_name} {conf:.2f}"
+                    font_scale = 0.5
+                    font_thickness = 1
+                    cv2.putText(
+                        frame,
+                        label_text,
+                        (x1, max(0, y1 - 5)),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        font_scale,
+                        color,
+                        font_thickness
+                    )
 
         # (Optional) Show the frame
         if ENABLE_IMG_SHOW:

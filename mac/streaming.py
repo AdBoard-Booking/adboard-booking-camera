@@ -121,6 +121,8 @@ def main():
                 "car_count": car_count,
                 "demography": demographies
             }
+
+            print(f"[INFO] Detected {detection_data} persons and {car_count} cars.")
             results_buffer.append(detection_data)
 
             # Check if we have enough data to send
