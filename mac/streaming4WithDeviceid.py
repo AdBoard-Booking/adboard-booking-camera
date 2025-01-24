@@ -43,6 +43,18 @@ def save_passed_count(filename, passed_count):
     except Exception as e:
         print(f"[ERROR] Unable to save passed count: {e}")
 
+def load_config(device_id):
+    """Load configuration from the API."""
+    config_url = f"http://localhost:3000/api/camera/v1/config/{device_id}"
+    # config_url = f"https://api.adboardbooking.com/api/camera/v1/config/{device_id}"
+    try:
+        response = requests.get(config_url, timeout=5)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] Unable to load config: {e}")
+        return None
+
 def api_worker(queue, endpoint, passed_count_file):
     """Worker thread to send API requests."""
     while True:
@@ -72,16 +84,23 @@ def main():
     ##########################
     # Configuration
     ##########################
-    RTSP_STREAM_URL = "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2"
-    INFERENCE_INTERVAL = 1.0  # 1 FPS
-    LONG_STAY_THRESHOLD = 20  # 20 seconds for "long-stay" logic
-    API_ENDPOINT = "https://api.adboardbooking.com/api/camera/v1/traffic"
-    BATCH_SIZE = 10  # Number of detections to batch for saving
-    API_CALL_INTERVAL = 300  # API call every 10 minutes (600 seconds)
-    PASSED_COUNT_FILE = "passed_count.json"
-
     DEVICE_ID = get_cpu_serial()
     print(f"[INFO] Device ID: {DEVICE_ID}")
+
+    config = load_config(DEVICE_ID)
+    if not config:
+        print("[ERROR] Failed to load configuration. Exiting...")
+        return
+
+    RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://default_url")
+    INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
+    LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
+    API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
+    BATCH_SIZE = config.get("batchSize", 10)
+    API_CALL_INTERVAL = config.get("apiCallInterval", 300)
+    PASSED_COUNT_FILE = "passed_count.json"
+
+    print(f"[INFO] Loaded configuration: {config}")
 
     model = YOLO("yolov8n.pt")  # YOLOv8 nano; pick a small model for Raspberry Pi
 
