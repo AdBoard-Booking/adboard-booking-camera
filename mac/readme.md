@@ -1,6 +1,8 @@
 ## Install python 
-pyenv install 3.9
-pyenv global 3.9
+curl -fsSL https://pyenv.run | bash
+
+pyenv install 3.9.11
+pyenv global 3.9.11
 
 Update zshrc file
 `
