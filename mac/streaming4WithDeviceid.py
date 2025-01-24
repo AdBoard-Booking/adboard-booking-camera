@@ -98,6 +98,7 @@ def main():
     API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
     BATCH_SIZE = config.get("batchSize", 10)
     API_CALL_INTERVAL = config.get("apiCallInterval", 300)
+    count_window_size =  config.get("countWindowSize", 5)
     PASSED_COUNT_FILE = "passed_count.json"
 
     print(f"[INFO] Loaded configuration: {config}")
@@ -118,7 +119,7 @@ def main():
     last_increase_time = time.time()
 
     # We'll keep a short history (window) of detection counts to smooth out flickers
-    count_window_size = 5
+    
     count_window = {"car": [], "person": []}
 
     # We also store a "stable_count" from the previous loop to compare changes
@@ -170,7 +171,7 @@ def main():
             # 2) Compute stable_count
             ################################
             stable_count = {
-                obj: int(round(statistics.mean(count_window[obj]))) if count_window[obj] else 0
+                obj: int(round(statistics.median(count_window[obj]))) if count_window[obj] else 0
                 for obj in raw_count
             }
 
