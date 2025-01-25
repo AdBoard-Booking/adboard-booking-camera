@@ -41,6 +41,12 @@ sudo systemctl enable traffic.service
 sudo systemctl start traffic.service
 sudo systemctl status traffic.service
 
+sudo systemctl stop traffic.service
+
 Logs
 sudo journalctl -u traffic.service -f
+
+Edit
+rm -rf streaming.py
+nano streaming.py
 
