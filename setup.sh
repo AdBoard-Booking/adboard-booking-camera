@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Starting installation process..."
+echo "Starting setup process..."
 
 sh boot/setup.sh
 sh traffic/setup.sh

@@ -51,5 +51,9 @@ if __name__ == "__main__":
         "url":"https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/traffic/streaming.py",
         "path":"/home/pi/streaming.py",
         "execute":False
+    },{
+        "url":"https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/boot/boot.py",
+        "path":"/home/pi/boot.py",
+        "execute":False
     }]
 }) 
