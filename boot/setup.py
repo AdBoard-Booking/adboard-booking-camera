@@ -48,4 +48,4 @@ if __name__ == "__main__":
         "url":"https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/traffic/streaming.py",
         "path":"/home/pi/streaming.py"
     }]
-})
+}) 
