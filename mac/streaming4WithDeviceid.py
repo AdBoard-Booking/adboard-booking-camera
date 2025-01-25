@@ -45,8 +45,8 @@ def save_detection_batch(filename, detection_batch):
 
 def load_config(device_id):
     """Load configuration from the API."""
-    config_url = f"http://localhost:3000/api/camera/v1/config/{device_id}"
-    # config_url = f"https://api.adboardbooking.com/api/camera/v1/config/{device_id}"
+    # config_url = f"http://localhost:3000/api/camera/v1/config/{device_id}"
+    config_url = f"https://api.adboardbooking.com/api/camera/v1/config/{device_id}"
     try:
         response = requests.get(config_url, timeout=5)
         response.raise_for_status()
