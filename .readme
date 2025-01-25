@@ -16,3 +16,7 @@ sudo nano /etc/nginx/sites-available/default
 sudo nginx -t
 sudo systemctl reload nginx
 http://192.168.29.225/proxy/172.23.182.242/camera
+
+
+# installation
+curl -fsSL https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/install.sh | bash
