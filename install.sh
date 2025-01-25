@@ -6,6 +6,14 @@ echo "Starting installation process..."
 echo "Updating packages..."
 sudo apt update && sudo apt upgrade -y
 
+# Check if Git is installed
+if ! command -v git &>/dev/null; then
+    echo "Git is not installed. Installing Git..."
+    sudo apt-get install -y git
+else
+    echo "Git is already installed."
+fi
+
 # Example: Install dependencies
 echo "Installing dependencies..."
 curl https://pyenv.run | bash
@@ -32,12 +40,22 @@ fi
 pyenv global 3.9.11
 
 # Example: Clone a GitHub repository (replace with your repo)
+REPO_DIR=~/adboard-booking-camera
+REPO_URL=https://github.com/AdBoard-Booking/adboard-booking-camera.git
+
 echo "Cloning repository..."
-rm -rf ~/adboard-booking-camera
-git clone https://github.com/AdBoard-Booking/adboard-booking-camera.git ~/adboard-booking-camera
+if [ -d "$REPO_DIR" ]; then
+    echo "Repository directory already exists. Pulling latest changes..."
+    cd "$REPO_DIR" || exit
+    git fetch --depth=1
+    git reset --hard origin/main
+else
+    echo "Repository directory does not exist. Cloning latest commit..."
+    git clone --depth=1 "$REPO_URL" "$REPO_DIR"
+fi
 
 # Example: Execute a setup script in the repository
 echo "Running setup script..."
-bash ~/adboard-booking-camera/setup.sh
+bash "$REPO_DIR/setup.sh"
 
 echo "Installation completed successfully!"
