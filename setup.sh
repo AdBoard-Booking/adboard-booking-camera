@@ -2,5 +2,22 @@
 
 echo "Starting setup process..."
 
-sh boot/setup.sh
-sh traffic/setup.sh
+# Check if the boot/setup.sh script exists and is executable
+if [ -f "boot/setup.sh" ] && [ -x "boot/setup.sh" ]; then
+    echo "Running boot/setup.sh..."
+    sh boot/setup.sh
+else
+    echo "Error: boot/setup.sh not found or not executable."
+    exit 1
+fi
+
+# Check if the traffic/setup.sh script exists and is executable
+if [ -f "traffic/setup.sh" ] && [ -x "traffic/setup.sh" ]; then
+    echo "Running traffic/setup.sh..."
+    sh traffic/setup.sh
+else
+    echo "Error: traffic/setup.sh not found or not executable."
+    exit 1
+fi
+
+echo "Setup process completed successfully!"
