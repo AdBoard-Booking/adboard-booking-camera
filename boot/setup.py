@@ -46,6 +46,6 @@ if __name__ == "__main__":
     maintain_download_registry({
     "download":[{
         "url":"https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/traffic/streaming.py",
-        "path":"streaming.py"
+        "path":"/home/pi/streaming.py"
     }]
 })
