@@ -19,4 +19,5 @@ http://192.168.29.225/proxy/172.23.182.242/camera
 
 
 # installation
+sudo apt update && sudo apt upgrade -y
 curl -fsSL https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/install.sh | bash

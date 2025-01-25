@@ -2,10 +2,6 @@
 
 echo "Starting installation process..."
 
-# Example: Update packages
-echo "Updating packages..."
-sudo apt update && sudo apt upgrade -y
-
 # Check if Git is installed
 if ! command -v git &>/dev/null; then
     echo "Git is not installed. Installing Git..."
