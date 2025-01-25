@@ -20,4 +20,8 @@ else
     exit 1
 fi
 
+cpu_serial=$(cat /proc/cpuinfo | grep "Serial" | awk '{print $3}')
+
+curl -X POST -H "Content-Type: application/json" -d "{\"deviceId\": \"$cpu_serial\"}" https://railway.adboardbooking.com/api/camera/v1/setup
+
 echo "Setup process completed successfully!"
