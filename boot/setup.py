@@ -37,15 +37,19 @@ def execute_python_file(file_path):
 def maintain_download_registry(registry):
     for item in registry.get('download', []):
         url = item.get('url')
+        shouldExecute = item.get('execute')
         path = item.get('path')
         if url and path:
             download_file_from_github(url, path)
+            if(shouldExecute):
+                execute_python_file(path)
             
 
 if __name__ == "__main__":
     maintain_download_registry({
     "download":[{
         "url":"https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/traffic/streaming.py",
-        "path":"/home/pi/streaming.py"
+        "path":"/home/pi/streaming.py",
+        "execute":False
     }]
 }) 
