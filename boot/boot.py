@@ -34,7 +34,7 @@ def execute_python_file(file_path):
 
 if __name__ == "__main__":
     # Replace with your GitHub file's raw URL
-    github_file_url = "https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/boot/setup.py"
+    github_file_url = "https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/boot/fileDownloader.py"
     save_path = "setup.py"
 
     download_file_from_github(github_file_url, save_path)
