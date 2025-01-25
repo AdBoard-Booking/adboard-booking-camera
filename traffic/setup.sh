@@ -1,8 +1,12 @@
 #!/bin/bash
 
+pip3 install ultralytics opencv-python requests   
+
+cp -r /home/pi/adboard-booking-camera/boot/streaming.py /home/pi/streaming.py
+
 cat <<EOL | sudo tee /etc/systemd/system/traffic.service
 [Unit]
-Description=My Python Script
+Description=Traffic Service
 After=network.target
 
 [Service]

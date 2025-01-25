@@ -1,6 +1,6 @@
 #!/bin/bash
 
-curl -L -o "/home/pi/boot.py" "https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/boot/boot.py"
+cp -r /home/pi/adboard-booking-camera/boot/boot.py /home/pi/boot.py
 
 cat <<EOL | sudo tee /etc/systemd/system/adbardbooking.service
 [Unit]
