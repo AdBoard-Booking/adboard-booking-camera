@@ -95,7 +95,7 @@ def main():
     INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
     LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
     API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
-    SAVE_INTERVAL = config.get("saveInterval", 10)  # Save to file every 10 minutes (600 seconds)
+    SAVE_INTERVAL = config.get("saveInterval", 60)  # Save to file every 10 minutes (600 seconds)
     API_CALL_INTERVAL = config.get("apiCallInterval", 300)
     count_window_size = config.get("countWindowSize", 5)
     DETECTION_BATCH_FILE = "detection_batch.json"
@@ -200,7 +200,7 @@ def main():
                 detection_batch.append({
                     "cameraUrl": RTSP_STREAM_URL,
                     "deviceId": DEVICE_ID,
-                    "timestamp": int(current_time),
+                    "timestamp": int(current_time)*1000,
                     "rawCount": raw_count,
                     "stableCount": stable_count,
                     "passedCount": passed_count

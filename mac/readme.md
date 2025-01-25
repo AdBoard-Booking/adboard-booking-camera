@@ -13,3 +13,34 @@ eval "$(pyenv init -)"
 Camera url: rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
 
 pip3 install opencv-python
+
+
+Setting service
+sudo nano /etc/systemd/system/traffic.service
+```
+[Unit]
+Description=My Python Script
+After=network.target
+
+[Service]
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/.pyenv/shims/python3 /home/pi/streaming.py
+Restart=always
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Enable service
+
+sudo systemctl daemon-reload
+sudo systemctl enable traffic.service
+sudo systemctl start traffic.service
+sudo systemctl status traffic.service
+
+Logs
+sudo journalctl -u traffic.service -f
+
