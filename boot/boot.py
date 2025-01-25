@@ -22,7 +22,7 @@ def download_file_from_github(url, output_path):
 
 if __name__ == "__main__":
     # Replace with your GitHub file's raw URL
-    github_file_url = "https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/traffic/streaming.py"
-    save_path = "/home/pi/traffic"
+    github_file_url = "https://raw.githubusercontent.com/AdBoard-Booking/adboard-booking-camera/refs/heads/main/traffic/setup.json"
+    save_path = "/home/pi/setup"
 
     download_file_from_github(github_file_url, save_path)
