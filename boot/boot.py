@@ -27,7 +27,7 @@ def execute_python_file(file_path):
     """
     try:
         print(f"Executing file: {file_path}")
-        subprocess.run(["python3", file_path], check=True)
+        subprocess.run(["/home/pi/.pyenv/shims/python3", file_path], check=True)
         print(f"File executed successfully: {file_path}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while executing the file: {e}")
