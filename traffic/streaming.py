@@ -201,7 +201,7 @@ def main():
             ################################
             # Add to batch only if stableCount > 0
             ################################
-            if any(stable_count[obj] > 0 for obj in stable_count):
+            if any(new_count[obj] > 0 for obj in new_count):
                 detection_batch.append({
                     "cameraUrl": RTSP_STREAM_URL,
                     "deviceId": DEVICE_ID,
@@ -221,7 +221,7 @@ def main():
             ################################
             # Make API call every API_CALL_INTERVAL
             ################################
-            if ENABLE_API_CALL and (current_time - last_api_call_time) >= API_CALL_INTERVAL:
+            if ENABLE_API_CALL and (current_time - last_api_call_time) >= API_CALL_INTERVAL & len(detection_batch) > 0:
                 api_queue.put(detection_batch.copy())
                 detection_batch.clear()
                 last_api_call_time = current_time
