@@ -152,6 +152,7 @@ def main():
             class_names = model.names
 
             raw_count = {"car": 0, "person": 0}
+            new_count = {"car": 0, "person": 0}
             if detections is not None:
                 for box in detections:
                     cls_id = int(box.cls[0].item())
@@ -176,18 +177,22 @@ def main():
                 for obj in raw_count
             }
 
+            
+
             # 3) Naive Heuristics
             for obj in raw_count:
                 if stable_count[obj] > prev_stable_count[obj]:
                     diff = stable_count[obj] - prev_stable_count[obj]
                     passed_count[obj] += diff
                     last_increase_time = current_time
+                    new_count[obj] = diff
                     print(f"[INFO] Detected an increase of {diff} {obj}s. Passed count: {passed_count[obj]}")
 
             time_since_increase = current_time - last_increase_time
             for obj in raw_count:
                 if time_since_increase > LONG_STAY_THRESHOLD and stable_count[obj] > 0:
                     passed_count[obj] += stable_count[obj]
+                    new_count[obj] = stable_count[obj]
                     print(f"[INFO] Long stay triggered, added {stable_count[obj]} {obj}s, total: {passed_count[obj]}")
                     last_increase_time = current_time
 
@@ -201,9 +206,9 @@ def main():
                     "cameraUrl": RTSP_STREAM_URL,
                     "deviceId": DEVICE_ID,
                     "timestamp": int(current_time)*1000,
-                    "rawCount": raw_count,
-                    "stableCount": stable_count,
-                    "passedCount": passed_count
+                    "newCount": new_count,  # New detections since last inference
+                    "stableCount": stable_count, # Smoothed detection count
+                    "passedCount": passed_count # Total passed count
                 })
 
             ################################
