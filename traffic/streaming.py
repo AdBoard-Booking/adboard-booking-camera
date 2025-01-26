@@ -226,7 +226,7 @@ def main():
                 detection_batch.clear()
                 last_api_call_time = current_time
 
-            print(f"[{int(current_time)*1000}] raw_count={raw_count}, stable_count={stable_count}, passed={passed_count}, detection_batch={len(detection_batch)}")
+            print(f"[{int(current_time)*1000}] new_count={new_count}, stable_count={stable_count}, passed={passed_count}")
 
         if detections is not None and ENABLE_BOUNDING_BOX and ENABLE_IMG_SHOW:
             for box in detections:
