@@ -1,3 +1,4 @@
+import datetime
 import time
 import statistics
 import cv2
@@ -10,6 +11,7 @@ import json
 ENABLE_IMG_SHOW = False
 ENABLE_API_CALL = True
 ENABLE_BOUNDING_BOX = False
+MODEL_NAME = "yolov8n.pt"
 
 try:
     from ultralytics import YOLO
@@ -54,6 +56,30 @@ def load_config(device_id):
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Unable to load config: {e}")
         return None
+
+def load_age_gender_models():
+    face_net = cv2.dnn.readNetFromCaffe("models/face_deploy.prototxt", "models/face_net.caffemodel")
+    age_net = cv2.dnn.readNetFromCaffe("models/age_deploy.prototxt", "models/age_net.caffemodel")
+    gender_net = cv2.dnn.readNetFromCaffe("models/gender_deploy.prototxt", "models/gender_net.caffemodel")
+    return face_net, age_net, gender_net
+
+def detect_age_gender(face, models):
+    face_net, age_net, gender_net = models
+    age_list = ['0-2', '4-6', '8-12', '15-20', '25-32', '38-43', '48-53', '60-100']
+    gender_list = ['Male', 'Female']
+
+    face_blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), 
+                                      (78.4263377603, 87.7689143744, 114.895847746), swapRB=False)
+    
+    gender_net.setInput(face_blob)
+    gender_preds = gender_net.forward()
+    gender = gender_list[gender_preds[0].argmax()]
+
+    age_net.setInput(face_blob)
+    age_preds = age_net.forward()
+    age = age_list[age_preds[0].argmax()]
+
+    return age, gender
 
 def api_worker(queue, endpoint, detection_batch_file):
     """Worker thread to send API requests."""
@@ -102,7 +128,8 @@ def main():
 
     print(f"[INFO] Loaded configuration: {config}")
 
-    model = YOLO("yolov8n.pt")  # YOLOv8 nano; pick a small model for Raspberry Pi
+    model = YOLO(MODEL_NAME)  # YOLOv8 nano; pick a small model for Raspberry Pi
+    face_net, age_net, gender_net = load_age_gender_models()
 
     cap = cv2.VideoCapture(RTSP_STREAM_URL)
     if not cap.isOpened():
@@ -115,11 +142,7 @@ def main():
 
     # Variables for our naive logic
     detection_batch = load_detection_batch(DETECTION_BATCH_FILE)
-    if detection_batch:
-        passed_count = detection_batch[-1]["passedCount"]
-    else:
-        passed_count = {"car": 0, "person": 0}
-    print(f"[INFO] Loaded passed count: {passed_count}")
+   
     last_increase_time = time.time()
 
     # We'll keep a short history (window) of detection counts to smooth out flickers
@@ -153,15 +176,34 @@ def main():
 
             raw_count = {"car": 0, "person": 0}
             new_count = {"car": 0, "person": 0}
+            new_people_info = []
             if detections is not None:
                 for box in detections:
                     cls_id = int(box.cls[0].item())
                     conf = float(box.conf[0].item())
                     if conf < 0.3:
                         continue
+
                     class_name = class_names[cls_id] if cls_id < len(class_names) else str(cls_id)
+
                     if class_name in raw_count:
                         raw_count[class_name] += 1
+                        # Get box coordinates
+                        x1, y1, x2, y2 = map(int, box.xyxy[0])
+                        # Draw bounding box
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        
+                        # Add confidence score
+                        conf = float(box.conf[0])
+                        cv2.putText(frame, f"{class_name} {conf:.2f} ", (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                    if class_name == "person":
+                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                        face = frame[y1:y2, x1:x2]
+                        if face.size > 0:
+                            age, gender = detect_age_gender(face, (face_net, age_net, gender_net))
+                            new_people_info.append({"age": age, "gender": gender})
 
             # Add this raw count to our rolling window
             for obj in raw_count:
@@ -177,23 +219,19 @@ def main():
                 for obj in raw_count
             }
 
-            
-
             # 3) Naive Heuristics
             for obj in raw_count:
                 if stable_count[obj] > prev_stable_count[obj]:
                     diff = stable_count[obj] - prev_stable_count[obj]
-                    passed_count[obj] += diff
                     last_increase_time = current_time
                     new_count[obj] = diff
-                    print(f"[INFO] Detected an increase of {diff} {obj}s. Passed count: {passed_count[obj]}")
+                    print(f"[++++++++++++++++++++++++++++++++] Detected an increase of {diff} {obj}s.")
 
             time_since_increase = current_time - last_increase_time
             for obj in raw_count:
                 if time_since_increase > LONG_STAY_THRESHOLD and stable_count[obj] > 0:
-                    passed_count[obj] += stable_count[obj]
                     new_count[obj] = stable_count[obj]
-                    print(f"[INFO] Long stay triggered, added {stable_count[obj]} {obj}s, total: {passed_count[obj]}")
+                    print(f"[^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^] Long stay triggered, added {stable_count[obj]} {obj}s")
                     last_increase_time = current_time
 
             prev_stable_count = stable_count
@@ -208,7 +246,7 @@ def main():
                     "timestamp": int(current_time)*1000,
                     "newCount": new_count,  # New detections since last inference
                     "stableCount": stable_count, # Smoothed detection count
-                    "passedCount": passed_count # Total passed count
+                    "newPeopleInfo": new_people_info
                 })
 
             ################################
@@ -221,12 +259,16 @@ def main():
             ################################
             # Make API call every API_CALL_INTERVAL
             ################################
-            if ENABLE_API_CALL and (current_time - last_api_call_time) >= API_CALL_INTERVAL & len(detection_batch) > 0:
-                api_queue.put(detection_batch.copy())
+            if (current_time - last_api_call_time) >= API_CALL_INTERVAL & len(detection_batch) > 0:
+                # print(f"[INFO] Sending batch: {len(detection_batch)}")
+                if ENABLE_API_CALL:
+                    api_queue.put(detection_batch.copy())
                 detection_batch.clear()
                 last_api_call_time = current_time
 
-            print(f"[{int(current_time)*1000}] new_count={new_count}, stable_count={stable_count}, passed={passed_count}")
+            # All person stats
+            for obj in raw_count:
+                print(f"[{datetime.datetime.fromtimestamp(current_time).strftime('%Y-%m-%d %H:%M:%S')}] {obj}: Raw: {raw_count[obj]} Stable: {stable_count[obj]} New: {new_count[obj]}")
 
         if detections is not None and ENABLE_BOUNDING_BOX and ENABLE_IMG_SHOW:
             for box in detections:
