@@ -4,12 +4,12 @@ cp -r /home/pi/adboard-booking-camera/boot/boot.py /home/pi/boot.py
 
 cat <<EOL | sudo tee /etc/systemd/system/adbardbooking.service
 [Unit]
-Description=My Python Script
+Description=AdboardBooking Service
 After=network.target
 
 [Service]
 WorkingDirectory=/home/pi
-ExecStart=/home/pi/.pyenv/shims/python3 /home/pi/boot.py
+ExecStart=/home/pi/.pyenv/shims/python3 /home/pi/adboard-booking-camera/boot/boot.py
 Restart=always
 User=pi
 Group=pi
