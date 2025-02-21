@@ -28,13 +28,13 @@ args = parser.parse_args()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 RTSP_URL = 0
-FINAL_API_URL = "https://your-api-endpoint.com/process"  # Replace with final API endpoint
 
-INTERVAL = 60  # Interval in seconds
 
 config = utils.load_config_for_device()
 
 billboardMonitoring = config['services']['billboardMonitoring']
+INTERVAL = billboardMonitoring.get('apiCallInterval', 60)  # Default interval of 60 seconds
+FINAL_API_URL = billboardMonitoring.get('publishApiEndpoint')
 
 def capture_frame(rtsp_url):
     logging.info("Capturing frame from RTSP stream")
@@ -60,7 +60,7 @@ def capture_frame(rtsp_url):
 
 def analyze_image(image_blob):
     
-    OPENROUTER_API_KEY = "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"
+    OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
 
     logging.info("Analyzing image using OpenRouter AI")
     payload = {
@@ -116,7 +116,7 @@ def send_result(result):
 
     logging.info(f"Sending result to final API {payload}")
 
-    response = requests.post("http://localhost:3000/api/camera/v1/billboard-ai-camera-stat", json={"data": payload})
+    response = requests.post(billboardMonitoring.get('publishApiEndpoint'), json={"data": payload})
     
     if response.status_code == 200:
         logging.info("Final API call successful")
@@ -128,7 +128,7 @@ def send_result(result):
 
 def main():
 
-    rtspStreamUrl = 0 #billboardMonitoring['rtspStreamUrl']
+    rtspStreamUrl = 0 #billboardMonitoring.get('rtspStreamUrl')
 
     while True:
         logging.info("Starting new iteration")

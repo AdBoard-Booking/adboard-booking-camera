@@ -8,3 +8,4 @@ CameraStreamingAI/billboard_data.json
 node_modules
 detection_batch.json
 __pycache__
+*.log
