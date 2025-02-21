@@ -142,7 +142,7 @@ RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://default_url")
 INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
 LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
 API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
-SAVE_INTERVAL = config.get("saveInterval", 60)  # Save to file every 10 minutes (600 seconds)
+SAVE_INTERVAL = config.get("saveInterval", 60)  # Save to file every 1 minutes (60 seconds)
 API_CALL_INTERVAL = config.get("apiCallInterval", 300)
 count_window_size = config.get("countWindowSize", 5)
 
@@ -209,7 +209,7 @@ def process_frames():
                 "newPeopleInfo": {}
             })
 
-        if (current_time - last_save_time).total_seconds() >= 10 and len(detection_batch) > 0:
+        if (current_time - last_save_time).total_seconds() >= SAVE_INTERVAL and len(detection_batch) > 0:
             save_detection_batch(DETECTION_BATCH_FILE, detection_batch)
             last_save_time = current_time
 

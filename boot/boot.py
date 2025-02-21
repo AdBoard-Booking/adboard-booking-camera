@@ -12,12 +12,19 @@ def main():
         return
     
     for service_name,service_details in config["services"].items():
+        
+        if not service_details:
+            continue
+            
         print(f"Service: {service_name}")
         filePath = f'/home/pi/adboard-booking-camera/{service_name}/main.py'
 
         #if file exists
         if not os.path.exists(filePath):
             print(f"File not found: {filePath}")
+            continue
+
+        if not service_details['rtspStreamUrl']:
             continue
 
         print(f"Executing file: {filePath}")
