@@ -57,30 +57,6 @@ def load_config(device_id):
         print(f"[ERROR] Unable to load config: {e}")
         return None
 
-def load_age_gender_models():
-    face_net = cv2.dnn.readNetFromCaffe("models/face_deploy.prototxt", "models/face_net.caffemodel")
-    age_net = cv2.dnn.readNetFromCaffe("models/age_deploy.prototxt", "models/age_net.caffemodel")
-    gender_net = cv2.dnn.readNetFromCaffe("models/gender_deploy.prototxt", "models/gender_net.caffemodel")
-    return face_net, age_net, gender_net
-
-def detect_age_gender(face, models):
-    face_net, age_net, gender_net = models
-    age_list = ['0-2', '4-6', '8-12', '15-20', '25-32', '38-43', '48-53', '60-100']
-    gender_list = ['Male', 'Female']
-
-    face_blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), 
-                                      (78.4263377603, 87.7689143744, 114.895847746), swapRB=False)
-    
-    gender_net.setInput(face_blob)
-    gender_preds = gender_net.forward()
-    gender = gender_list[gender_preds[0].argmax()]
-
-    age_net.setInput(face_blob)
-    age_preds = age_net.forward()
-    age = age_list[age_preds[0].argmax()]
-
-    return age, gender
-
 def api_worker(queue, endpoint, detection_batch_file):
     """Worker thread to send API requests."""
     while True:
@@ -129,7 +105,6 @@ def main():
     print(f"[INFO] Loaded configuration: {config}")
 
     model = YOLO(MODEL_NAME)  # YOLOv8 nano; pick a small model for Raspberry Pi
-    face_net, age_net, gender_net = load_age_gender_models()
 
     cap = cv2.VideoCapture(RTSP_STREAM_URL)
     if not cap.isOpened():
@@ -197,13 +172,6 @@ def main():
                         conf = float(box.conf[0])
                         cv2.putText(frame, f"{class_name} {conf:.2f} ", (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                    if class_name == "person":
-                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                        face = frame[y1:y2, x1:x2]
-                        if face.size > 0:
-                            age, gender = detect_age_gender(face, (face_net, age_net, gender_net))
-                            new_people_info.append({"age": age, "gender": gender})
 
             # Add this raw count to our rolling window
             for obj in raw_count:
