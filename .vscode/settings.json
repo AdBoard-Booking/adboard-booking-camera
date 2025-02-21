@@ -1,0 +1,5 @@
+{
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "github.copilot.chat.generateTests.codeLens": true,
+    "github.copilot.chat.languageContext.typescript.enabled": true
+}
