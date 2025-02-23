@@ -5,20 +5,6 @@ echo "Updating system and installing dependencies..."
 sudo apt update
 sudo apt install -y nginx ffmpeg curl
 
-# Install and configure ZeroTier
-echo "Installing ZeroTier..."
-curl -s https://install.zerotier.com | sudo bash
-echo "Joining ZeroTier network..."
-sudo zerotier-cli join 48d6023c46a723d4
-
-# Wait for ZeroTier to assign an IP address
-echo "Waiting for ZeroTier to assign an IP address..."
-sleep 10
-
-# Retrieve ZeroTier IP address using ZeroTier CLI
-ZEROTIER_IP=$(sudo zerotier-cli listnetworks | awk '/48d6023c46a723d4/ {print $NF}')
-echo "ZeroTier IP Address: $ZEROTIER_IP"
-
 # Get Workspace ID and Camera URL from environment variables
 WORKSPACE_ID=${WORKSPACE_ID:-""}
 CAMERA_URL=${CAMERA_URL:-""}
@@ -48,7 +34,7 @@ sudo mkdir -p /var/www/stream/
 
 # Copy HLS player file
 echo "Creating HLS player file..."
-cat <<EOL | sudo tee /var/www/stream/hls.html
+cat <<EOL | sudo tee /var/www/stream/index.html
 <!DOCTYPE html>
 <html>
 <head>
@@ -123,11 +109,6 @@ server {
     location / {
         root /var/www/html;
         index index.html index.htm;
-    }
-
-    location /camera {
-        alias /var/www/stream/;
-        index hls.html;
     }
 
     location /stream {
