@@ -6,6 +6,7 @@ echo "Updating system and installing dependencies..."
 
 # Get Workspace ID and Camera URL from environment variables
 # WORKSPACE_ID=${WORKSPACE_ID:-""}
+
 CAMERA_URL=rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
 
 # if [ -z "$WORKSPACE_ID" ]; then
@@ -63,6 +64,9 @@ cat <<EOL | sudo tee /var/www/stream/index.html
 </html>
 EOL
 
+cp /home/pi/adboard-booking-camera/CameraStreaming/fetch.py /usr/local/bin/fetch_camera_url.py
+sudo chmod +x /usr/local/bin/fetch_camera_url.py
+
 # Create FFmpeg service file
 echo "Creating FFmpeg service file..."
 cat <<EOL | sudo tee /etc/systemd/system/ffmpeg-stream.service
@@ -71,7 +75,7 @@ Description=FFmpeg RTSP to HLS Stream
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/ffmpeg -i $CAMERA_URL -c:v copy -hls_time 1 -hls_list_size 3 -hls_flags delete_segments+append_list -start_number 1 -f hls /var/www/stream/live.m3u8
+ExecStart=/usr/local/bin/fetch_camera_url.py && /var/www/stream/start_ffmpeg.sh
 Restart=always
 RestartSec=10
 StandardOutput=file:/var/log/ffmpeg_stream.log
