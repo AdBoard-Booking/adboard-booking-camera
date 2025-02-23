@@ -142,10 +142,12 @@ sleep 5
 FUNNEL_URL=$(tailscale funnel status | grep -o 'https://[^ ]*' | head -n 1)
 echo "Funnel URL: $FUNNEL_URL"
 
+cpu_serial=$(cat /proc/cpuinfo | grep "Serial" | awk '{print $3}')
+
 # Send request and capture full response
 REGISTRATION_RESPONSE=$(curl -s --fail -X POST "https://api.adboardbooking.com/camera/register" \
     -H "Content-Type: application/json" \
-    -d '{"workspaceId": "'"$WORKSPACE_ID"'", "cameraUrl": "'"$CAMERA_URL"'", "zerotierIp": "'"$FUNNEL_URL"'"}' \
+    -d '{"deviceId": "'"$cpu_serial"'", "service": "billboardMonitoring", "publicWebUrl": "'"$FUNNEL_URL"'"}' \
     -w "%{http_code}")
 
 # Extract HTTP status using `expr`
