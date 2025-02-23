@@ -54,9 +54,19 @@ server {
     add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
     add_header 'Access-Control-Allow-Credentials' 'true';
 
+    root $SCRIPT_DIR/services/cameraStreaming/public;
+
+     # Point index to the Laravel front controller.
+    index           index.html;
+
     location / {
-        root $SCRIPT_DIR/services/cameraStreaming/public/stream;
-        index index.html index.htm;
+        # URLs to attempt, including pretty ones.
+        try_files   $uri $uri/ /index.html?$query_string;
+    }
+
+    # Remove trailing slash to please routing system.
+    if (!-d $request_filename) {
+            rewrite     ^/(.+)/$ /$1 permanent;
     }
 }
 EOL
