@@ -11,7 +11,7 @@ import datetime
 import re
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-adjacent_folder = os.path.join(current_dir, '..', 'boot')  # Assuming 'utils' is the adjacent folder
+adjacent_folder = os.path.join(current_dir, '..', 'utils')  # Assuming 'utils' is the adjacent folder
 sys.path.append(adjacent_folder)
 import utils
 
@@ -27,7 +27,6 @@ args = parser.parse_args()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-RTSP_URL = 0
 
 
 config = utils.load_config_for_device()
@@ -35,6 +34,7 @@ config = utils.load_config_for_device()
 billboardMonitoring = config['services']['billboardMonitoring']
 INTERVAL = billboardMonitoring.get('apiCallInterval', 60)  # Default interval of 60 seconds
 FINAL_API_URL = billboardMonitoring.get('publishApiEndpoint')
+RTSP_STREAM_URL = billboardMonitoring.get("rtspStreamUrl", "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2")
 
 def capture_frame(rtsp_url):
     logging.info("Capturing frame from RTSP stream")
@@ -60,7 +60,7 @@ def capture_frame(rtsp_url):
 
 def analyze_image(image_blob):
     
-    OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
+    OPENROUTER_API_KEY = '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'
 
     logging.info("Analyzing image using OpenRouter AI")
     payload = {
@@ -128,11 +128,9 @@ def send_result(result):
 
 def main():
 
-    rtspStreamUrl = 0 #billboardMonitoring.get('rtspStreamUrl')
-
     while True:
         logging.info("Starting new iteration")
-        image_blob = capture_frame(rtspStreamUrl)
+        image_blob = capture_frame(RTSP_STREAM_URL)
         if not image_blob:
             time.sleep(INTERVAL)
             continue

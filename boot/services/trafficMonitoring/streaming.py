@@ -138,7 +138,7 @@ if not config:
     print("[ERROR] Failed to load configuration. Exiting...")
 
 DETECTION_BATCH_FILE = "detection_batch.json"
-RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://default_url")
+RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2")
 INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
 LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
 API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
