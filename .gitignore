@@ -9,3 +9,4 @@ node_modules
 detection_batch.json
 __pycache__
 *.log
+boot/services/cameraStreaming/public/stream
