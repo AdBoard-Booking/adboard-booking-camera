@@ -6,6 +6,7 @@ echo "Starting setup process..."
 if [ -f "boot/setup.sh" ] && [ -x "boot/setup.sh" ]; then
     echo "Running boot/setup.sh..."
     sh boot/setup.sh
+    sh CameraStreaming/setup.sh
 else
     echo "Error: boot/setup.sh not found or not executable."
     exit 1

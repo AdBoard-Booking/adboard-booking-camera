@@ -2,31 +2,27 @@
 
 # Update and install required packages
 echo "Updating system and installing dependencies..."
-sudo apt update
-sudo apt install -y nginx ffmpeg curl
+# sudo apt install -y nginx ffmpeg curl
 
 # Get Workspace ID and Camera URL from environment variables
-WORKSPACE_ID=${WORKSPACE_ID:-""}
-CAMERA_URL=${CAMERA_URL:-""}
+# WORKSPACE_ID=${WORKSPACE_ID:-""}
+CAMERA_URL=rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2
 
-if [ -z "$WORKSPACE_ID" ]; then
-  echo "Error: WORKSPACE_ID is not set. Please export it as an environment variable."
-  exit 1
-fi
+# if [ -z "$WORKSPACE_ID" ]; then
+#   echo "Error: WORKSPACE_ID is not set. Please export it as an environment variable."
+#   exit 1
+# fi
 
-if [ -z "$CAMERA_URL" ]; then
-  echo "Error: CAMERA_URL is not set. Please export it as an environment variable."
-  exit 1
-fi
+# if [ -z "$CAMERA_URL" ]; then
+#   echo "Error: CAMERA_URL is not set. Please export it as an environment variable."
+#   exit 1
+# fi
 
-echo "Using Workspace ID: $WORKSPACE_ID"
-echo "Using Camera URL: $CAMERA_URL"
+# echo "Using Workspace ID: $WORKSPACE_ID"
+# echo "Using Camera URL: $CAMERA_URL"
 
 # Register camera with the server
-REGISTRATION_RESPONSE=$(curl -s -X POST https://api.adboardbooking.com/camera/register \
-    -H "Content-Type: application/json" \
-    -d '{"workspaceId": "'$WORKSPACE_ID'", "cameraUrl": "'$CAMERA_URL'", "zerotierIp": "'$ZEROTIER_IP'"}')
-echo "Registration Response: $REGISTRATION_RESPONSE"
+
 
 # Set up directories for streaming
 echo "Creating streaming directory..."
@@ -107,7 +103,7 @@ server {
     add_header 'Access-Control-Allow-Credentials' 'true';
 
     location / {
-        root /var/www/html;
+        root /var/www/stream;
         index index.html index.htm;
     }
 
@@ -135,3 +131,30 @@ fi
 # Check Nginx status
 echo "Checking Nginx status..."
 echo "Setup completed successfully."
+
+tailscale funnel --bg 80
+sleep 5
+
+FUNNEL_URL=$(tailscale funnel status | grep -o 'https://[^ ]*' | head -n 1)
+echo "Funnel URL: $FUNNEL_URL"
+
+# Send request and capture full response
+REGISTRATION_RESPONSE=$(curl -s --fail -X POST "https://api.adboardbooking.com/camera/register" \
+    -H "Content-Type: application/json" \
+    -d '{"workspaceId": "'"$WORKSPACE_ID"'", "cameraUrl": "'"$CAMERA_URL"'", "zerotierIp": "'"$FUNNEL_URL"'"}' \
+    -w "%{http_code}")
+
+# Extract HTTP status using `expr`
+HTTP_STATUS=$(echo "$REGISTRATION_RESPONSE" | awk '{print substr($0,length($0)-2,3)}')
+RESPONSE_BODY=$(echo "$REGISTRATION_RESPONSE" | awk '{print substr($0,1,length($0)-3)}')
+
+echo "Registration Response: $RESPONSE_BODY"
+echo "HTTP Status Code: $HTTP_STATUS"
+
+# Wait for successful response
+if [ "$HTTP_STATUS" -eq 200 ]; then
+    echo "Registration successful!"
+else
+    echo "Registration failed with status code: $HTTP_STATUS"
+    exit 1
+fi
