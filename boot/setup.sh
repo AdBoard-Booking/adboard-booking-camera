@@ -2,7 +2,7 @@
 
 cp -r /home/pi/adboard-booking-camera/boot/boot.py /home/pi/boot.py
 
-cat <<EOL | sudo tee /etc/systemd/system/adbardbooking.service
+cat <<EOL | sudo tee /etc/systemd/system/adboardbooking.service
 [Unit]
 Description=AdboardBooking Service
 After=network.target
