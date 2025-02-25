@@ -34,6 +34,7 @@ config = utils.load_config_for_device()
 billboardMonitoring = config['services']['billboardMonitoring']
 INTERVAL = billboardMonitoring.get('apiCallInterval', 60)  # Default interval of 60 seconds
 FINAL_API_URL = billboardMonitoring.get('publishApiEndpoint')
+OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
 RTSP_STREAM_URL = billboardMonitoring.get("rtspStreamUrl", "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2")
 
 def capture_frame(rtsp_url):
@@ -59,8 +60,6 @@ def capture_frame(rtsp_url):
 
 
 def analyze_image(image_blob):
-    
-    OPENROUTER_API_KEY = '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'
 
     logging.info("Analyzing image using OpenRouter AI")
     payload = {
