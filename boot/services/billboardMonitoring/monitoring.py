@@ -9,6 +9,7 @@ import sys
 import argparse
 import datetime
 import re
+import pytz
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 adjacent_folder = os.path.join(current_dir, '..', 'utils')  # Assuming 'utils' is the adjacent folder
@@ -24,8 +25,10 @@ parser.add_argument("--publish", type=int, choices=[0, 1], default=0,
 
 args = parser.parse_args()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging with IST timezone
+ist_tz = pytz.timezone('Asia/Kolkata')
+logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
+logging.basicConfig(level=logging.INFO, format='%(asctime)s IST - %(levelname)s - %(message)s')
 
 
 

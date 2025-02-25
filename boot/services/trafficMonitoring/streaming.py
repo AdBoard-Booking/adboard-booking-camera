@@ -3,11 +3,18 @@ import threading
 import supervision as sv
 from collections import defaultdict
 from ultralytics import YOLO
-from datetime import datetime, timedelta
+import datetime
 import argparse
 import json
 import requests
 import queue
+import logging
+import pytz
+
+# Configure logging with IST timezone
+ist_tz = pytz.timezone('Asia/Kolkata')
+logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
+logging.basicConfig(level=logging.INFO, format='%(asctime)s IST - %(levelname)s - %(message)s')
 
 # Load YOLO model
 model = YOLO("yolov8n.pt")
@@ -54,7 +61,7 @@ def get_cpu_serial():
                 if line.startswith("Serial"):
                     return line.strip().split(":")[1].strip()
     except Exception as e:
-        print(f"[ERROR] Unable to read CPU serial: {e}")
+        logging.error(f"Unable to read CPU serial: {e}")
     return "UNKNOWN"
 
 def load_detection_batch(filename):
@@ -66,46 +73,43 @@ def load_detection_batch(filename):
         return []
 
 def save_detection_batch(filename, detection_batch):
-    print("Save detection batch to a file.")
+    logging.info("Save detection batch to a file.")
     try:
         with open(filename, "w") as f:
             json.dump(detection_batch, f)
     except Exception as e:
-        print(f"[ERROR] Unable to save detection batch: {e}")
+        logging.error(f"Unable to save detection batch: {e}")
 
 def load_config(device_id):
     """Load configuration from the API."""
-    # config_url = f"http://localhost:3000/api/camera/v1/config/{device_id}"
     config_url = f"https://api.adboardbooking.com/api/camera/v1/config/{device_id}"
     try:
         response = requests.get(config_url, timeout=5)
         response.raise_for_status()
-        print(f"Configs: {response.json()}")
+        logging.info(f"Configs: {response.json()}")
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"[ERROR] Unable to load config: {e}")
+        logging.error(f"Unable to load config: {e}")
         return None
 
 def api_worker(queue, endpoint, detection_batch_file):
     """Worker thread to send API requests."""
     while True:
-        batch = queue.get()  # Get a batch from the queue
+        batch = queue.get()
         if batch is None:
-            break  # Stop the thread if None is received
+            break
 
         try:
-            print(f"[DEBUG] Sending batch: {len(batch)}")
+            logging.debug(f"Sending batch: {len(batch)}")
             response = requests.post(endpoint, json={"data": batch}, timeout=5)
             if response.status_code == 200:
-                print(f"[INFO] Batch sent successfully: {len(batch)}")
-                save_detection_batch(detection_batch_file, [])  # Clear the file after successful API call
+                logging.info(f"Batch sent successfully: {len(batch)}")
+                save_detection_batch(detection_batch_file, [])
             else:
-                print(f"[WARN] API returned: {response.status_code}, {response.text}")
-                # Re-add batch to the queue for retry
+                logging.warning(f"API returned: {response.status_code}, {response.text}")
                 queue.put(batch)
         except requests.exceptions.RequestException as e:
-            print(f"[ERROR] API request error: {e}")
-            # Re-add batch to the queue for retry
+            logging.error(f"API request error: {e}")
             queue.put(batch)
 
         queue.task_done()
@@ -113,8 +117,8 @@ def api_worker(queue, endpoint, detection_batch_file):
 
 def log_detection(class_name, object_id):
     """ Log the timestamp, class, and ID of a newly detected object """
-    utc_now = datetime.now()
-    ist_now = utc_now + timedelta(hours=5, minutes=30)
+    utc_now = datetime.datetime.now()
+    ist_now = utc_now + datetime.timedelta(hours=5, minutes=30)
     timestamp_ist = ist_now.strftime("%Y-%m-%d %H:%M:%S")
     with open(LOG_FILE, "a") as f:
         f.write(f"{timestamp_ist}, {class_name}, {object_id}\n")
@@ -131,11 +135,11 @@ def capture_frames():
 
 
 DEVICE_ID = get_cpu_serial()
-print(f"[INFO] Device ID: {DEVICE_ID}")
+logging.info(f"Device ID: {DEVICE_ID}")
 config = load_config(DEVICE_ID)
 
 if not config:
-    print("[ERROR] Failed to load configuration. Exiting...")
+    logging.error("Failed to load configuration. Exiting...")
 
 DETECTION_BATCH_FILE = "detection_batch.json"
 RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2")
@@ -156,11 +160,11 @@ def process_frames():
     global latest_frame
     DEVICE_ID = get_cpu_serial()
     detection_batch = load_detection_batch(DETECTION_BATCH_FILE)
-    last_save_time = datetime.now()
-    last_api_call_time = datetime.now()
+    last_save_time = datetime.datetime.now()
+    last_api_call_time = datetime.datetime.now()
 
     while True:
-        current_time = datetime.now()
+        current_time = datetime.datetime.now()
         with frame_lock:
             if latest_frame is None:
                 continue
