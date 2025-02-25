@@ -10,6 +10,7 @@ import requests
 import queue
 import logging
 import pytz
+import os
 
 # Configure logging with IST timezone
 ist_tz = pytz.timezone('Asia/Kolkata')
@@ -73,7 +74,7 @@ def load_detection_batch(filename):
         return []
 
 def save_detection_batch(filename, detection_batch):
-    logging.info(f"Save detection batch to a file, Batch: {detection_batch}")
+    logging.info(f"Save detection batch to a file, Count: {len(detection_batch)}")
     try:
         with open(filename, "w") as f:
             json.dump(detection_batch, f)
@@ -145,6 +146,10 @@ if not config:
     logging.error("Failed to load configuration. Exiting...")
 
 DETECTION_BATCH_FILE = "detection_batch.json"
+
+#print the file absolute path
+logging.info(f"Detection batch file: {os.path.abspath(DETECTION_BATCH_FILE)}")
+
 RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2")
 INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
 LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
