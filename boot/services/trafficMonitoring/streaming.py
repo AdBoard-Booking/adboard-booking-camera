@@ -82,7 +82,7 @@ def save_detection_batch(filename, detection_batch):
 
 def load_config(device_id):
     """Load configuration from the API."""
-    config_url = f"https://api.adboardbooking.com/api/camera/v1/config/{device_id}"
+    config_url = f"https://railway.adboardbooking.com/api/camera/v1/config/{device_id}"
     try:
         response = requests.get(config_url, timeout=5)
         response.raise_for_status()
@@ -148,7 +148,7 @@ DETECTION_BATCH_FILE = "detection_batch.json"
 RTSP_STREAM_URL = config.get("rtspStreamUrl", "rtsp://adboardbooking:adboardbooking@192.168.29.204:554/stream2")
 INFERENCE_INTERVAL = config.get("inferenceInterval", 1.0)
 LONG_STAY_THRESHOLD = config.get("longStayThreshold", 20)
-API_ENDPOINT = config.get("apiEndpoint", "https://api.adboardbooking.com/api/camera/v1/traffic")
+API_ENDPOINT = config.get("apiEndpoint", "https://railway.adboardbooking.com/api/camera/v1/traffic")
 SAVE_INTERVAL = config.get("saveInterval", 60)  # Save to file every 1 minutes (60 seconds)
 API_CALL_INTERVAL = config.get("apiCallInterval", 300)
 count_window_size = config.get("countWindowSize", 5)

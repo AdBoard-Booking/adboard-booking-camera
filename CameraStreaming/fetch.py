@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 
 # API Endpoint
-API_URL = "https://api.adboardbooking.com/api/camera/v1/config/UNKNOWN"
+API_URL = "https://railway.adboardbooking.com/api/camera/v1/config/UNKNOWN"
 
 # Paths
 CONFIG_FILE = "/var/www/stream/camera_config.json"

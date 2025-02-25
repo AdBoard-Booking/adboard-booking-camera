@@ -145,7 +145,7 @@ echo "Funnel URL: $FUNNEL_URL"
 cpu_serial=$(cat /proc/cpuinfo | grep "Serial" | awk '{print $3}')
 
 # Send request and capture full response
-REGISTRATION_RESPONSE=$(curl -s --fail -X POST "https://api.adboardbooking.com/camera/register" \
+REGISTRATION_RESPONSE=$(curl -s --fail -X POST "https://railway.adboardbooking.com/camera/register" \
     -H "Content-Type: application/json" \
     -d '{"deviceId": "'"$cpu_serial"'", "service": "billboardMonitoring", "publicWebUrl": "'"$FUNNEL_URL"'"}' \
     -w "%{http_code}")
