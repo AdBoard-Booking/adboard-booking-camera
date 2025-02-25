@@ -73,7 +73,7 @@ def load_detection_batch(filename):
         return []
 
 def save_detection_batch(filename, detection_batch):
-    logging.info("Save detection batch to a file.")
+    logging.info(f"Save detection batch to a file, Batch: {detection_batch}")
     try:
         with open(filename, "w") as f:
             json.dump(detection_batch, f)
@@ -101,15 +101,18 @@ def api_worker(queue, endpoint, detection_batch_file):
 
         try:
             logging.debug(f"Sending batch: {len(batch)}")
-            response = requests.post(endpoint, json={"data": batch}, timeout=5)
+            payload = {"data": batch}
+            response = requests.post(endpoint, json=payload, timeout=5)
             if response.status_code == 200:
                 logging.info(f"Batch sent successfully: {len(batch)}")
                 save_detection_batch(detection_batch_file, [])
             else:
                 logging.warning(f"API returned: {response.status_code}, {response.text}")
+                logging.warning(f"Failed payload: {json.dumps(payload, indent=2)}")
                 queue.put(batch)
         except requests.exceptions.RequestException as e:
             logging.error(f"API request error: {e}")
+            logging.error(f"Failed payload: {json.dumps(payload, indent=2)}")
             queue.put(batch)
 
         queue.task_done()
@@ -209,8 +212,7 @@ def process_frames():
                 "deviceId": DEVICE_ID,
                 "timestamp": int(current_time.timestamp() * 1000),
                 "newCount": object_counts,  # New detections counted
-                "stableCount": {},  # Smoothed detection count (if needed)
-                "newPeopleInfo": {}
+                "stableCount": {}  # Smoothed detection count (if needed)
             })
 
         if (current_time - last_save_time).total_seconds() >= SAVE_INTERVAL and len(detection_batch) > 0:

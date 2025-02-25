@@ -35,6 +35,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s IST - %(levelname)s 
 config = utils.load_config_for_device()
 
 billboardMonitoring = config['services']['billboardMonitoring']
+
+logging.info(f"Billboard monitoring config: {billboardMonitoring}")
+
 INTERVAL = billboardMonitoring.get('apiCallInterval', 60)  # Default interval of 60 seconds
 FINAL_API_URL = billboardMonitoring.get('publishApiEndpoint')
 OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
