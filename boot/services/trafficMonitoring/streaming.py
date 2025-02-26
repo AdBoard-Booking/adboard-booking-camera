@@ -11,6 +11,13 @@ import queue
 import logging
 import pytz
 import os
+import sys
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+adjacent_folder = os.path.join(current_dir, '..', 'utils')  # Assuming 'utils' is the adjacent folder
+sys.path.append(adjacent_folder)
+
+from mqtt import publish_message
 
 # Configure logging with IST timezone
 ist_tz = pytz.timezone('Asia/Kolkata')
@@ -53,6 +60,19 @@ unique_objects = defaultdict(set)  # Using a set to track unique object IDs
 # File to log detections
 LOG_FILE = "detections_log.txt"
 
+DEVICE_ID = 'UNKNOWN'
+
+def format_error_message(error_type, error_msg, extra_info=None):
+    """Format error message as JSON string"""
+    error_data = {
+        "type": error_type,
+        "message": str(error_msg),
+        "device_id": DEVICE_ID,
+        "timestamp": datetime.datetime.now().isoformat(),
+    }
+    if extra_info:
+        error_data.update(extra_info)
+    return json.dumps(error_data)
 
 def get_cpu_serial():
     """Fetch the CPU serial number as a unique device ID."""
@@ -62,6 +82,8 @@ def get_cpu_serial():
                 if line.startswith("Serial"):
                     return line.strip().split(":")[1].strip()
     except Exception as e:
+        error_msg = format_error_message("SYSTEM_ERROR", f"Unable to read CPU serial: {e}")
+        publish_message(error_msg)
         logging.error(f"Unable to read CPU serial: {e}")
     return "UNKNOWN"
 
@@ -79,6 +101,8 @@ def save_detection_batch(filename, detection_batch):
         with open(filename, "w") as f:
             json.dump(detection_batch, f)
     except Exception as e:
+        error_msg = format_error_message("FILE_ERROR", f"Unable to save detection batch: {e}")
+        publish_message(error_msg)
         logging.error(f"Unable to save detection batch: {e}")
 
 def load_config(device_id):
@@ -90,6 +114,8 @@ def load_config(device_id):
         logging.info(f"Configs: {response.json()}")
         return response.json()
     except requests.exceptions.RequestException as e:
+        error_msg = format_error_message("CONFIG_ERROR", f"Unable to load config: {e}")
+        publish_message(error_msg)
         logging.error(f"Unable to load config: {e}")
         return None
 
@@ -108,10 +134,21 @@ def api_worker(queue, endpoint, detection_batch_file):
                 logging.info(f"Batch sent successfully: {len(batch)}")
                 save_detection_batch(detection_batch_file, [])
             else:
-                logging.warning(f"API returned: {response.status_code}, {response.text}")
+                error_msg = format_error_message(
+                    "API_ERROR",
+                    f"API returned: {response.status_code}, {response.text}",
+                    {"payload": payload}
+                )
+                publish_message(error_msg)
                 logging.warning(f"Failed payload: {json.dumps(payload, indent=2)}")
                 queue.put(batch)
         except requests.exceptions.RequestException as e:
+            error_msg = format_error_message(
+                "API_ERROR",
+                f"API request error: {e}",
+                {"payload": payload}
+            )
+            publish_message(error_msg)
             logging.error(f"API request error: {e}")
             logging.error(f"Failed payload: {json.dumps(payload, indent=2)}")
             queue.put(batch)
@@ -138,7 +175,7 @@ def capture_frames():
 
 
 
-DEVICE_ID = get_cpu_serial()
+
 logging.info(f"Device ID: {DEVICE_ID}")
 config = load_config(DEVICE_ID)
 
