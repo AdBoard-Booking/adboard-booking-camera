@@ -64,30 +64,19 @@ cat <<EOL | sudo tee /var/www/stream/index.html
 </html>
 EOL
 
-cp /home/pi/adboard-booking-camera/CameraStreaming/fetch.py /usr/local/bin/fetch_camera_url.py
-sudo chmod +x /usr/local/bin/fetch_camera_url.py
-
 # Create FFmpeg service file
 echo "Creating FFmpeg service file..."
-cat <<EOL | sudo tee /etc/systemd/system/ffmpeg-stream.service
-[Unit]
-Description=FFmpeg RTSP to HLS Stream
-After=network.target
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+python3 $SCRIPT_DIR/fetch.py
 
-[Service]
-ExecStart=/usr/local/bin/fetch_camera_url.py && /var/www/stream/start_ffmpeg.sh
-Restart=always
-RestartSec=10
-StandardOutput=file:/var/log/ffmpeg_stream.log
-StandardError=file:/var/log/ffmpeg_stream.err
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
+if [ $? -ne 0 ]; then
+    echo "Failed to generate FFmpeg configuration"
+    exit 1
+fi
 
 # Enable and start FFmpeg service
 echo "Enabling and starting FFmpeg service..."
+sudo systemctl daemon-reload
 sudo systemctl enable ffmpeg-stream
 sudo systemctl start ffmpeg-stream
 
