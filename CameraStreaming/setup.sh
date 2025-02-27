@@ -107,6 +107,7 @@ Description=FFmpeg RTSP to HLS Stream
 After=network.target
 
 [Service]
+ExecStartPre=/usr/bin/tailscale funnel --bg 80
 ExecStart=/home/pi/.pyenv/shims/python $SCRIPT_DIR/fetch_and_stream.py
 Restart=always
 RestartSec=10
