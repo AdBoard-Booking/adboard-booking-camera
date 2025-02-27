@@ -2,6 +2,8 @@
 
 echo "Starting setup process..."
 
+sudo tailscale up --operator=pi
+
 # Check if the boot/setup.sh script exists and is executable
 if [ -f "boot/setup.sh" ] && [ -x "boot/setup.sh" ]; then
     echo "Running boot/setup.sh..."
