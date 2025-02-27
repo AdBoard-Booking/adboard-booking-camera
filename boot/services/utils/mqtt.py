@@ -44,28 +44,38 @@ def on_publish(client, userdata, mid, properties=None):
 def on_log(client, userdata, level, buf):
     logger.debug(f"MQTT Log: {buf}")
 
+class MQTTClient:
+    _instance = None
+    
+    @staticmethod
+    def get_instance():
+        if MQTTClient._instance is None:
+            MQTTClient._instance = mqtt.Client(protocol=mqtt.MQTTv5)
+            client = MQTTClient._instance
+            
+            # Set up callbacks
+            client.on_connect = on_connect
+            client.on_disconnect = on_disconnect
+            client.on_publish = on_publish
+            client.on_log = on_log
+            
+            # Enable SSL/TLS
+            client.tls_set()
+            
+            # Set username and password
+            client.username_pw_set(USERNAME, PASSWORD)
+            
+            logger.info(f"Attempting to connect to {BROKER}:{PORT}")
+            client.connect(BROKER, PORT, keepalive=60)
+            
+            # Start the loop in a background thread
+            client.loop_start()
+            
+        return MQTTClient._instance
+
 def publish_message(message):
     try:
-        # Using MQTT v5 protocol
-        client = mqtt.Client(protocol=mqtt.MQTTv5)
-        
-        # Set up callbacks
-        client.on_connect = on_connect
-        client.on_disconnect = on_disconnect
-        client.on_publish = on_publish
-        client.on_log = on_log
-        
-        # Enable SSL/TLS
-        client.tls_set()
-        
-        # Set username and password
-        client.username_pw_set(USERNAME, PASSWORD)
-        
-        logger.info(f"Attempting to connect to {BROKER}:{PORT}")
-        client.connect(BROKER, PORT, keepalive=60)
-        
-        # Start the loop to process callbacks
-        client.loop_start()
+        client = MQTTClient.get_instance()
         
         logger.info(f"Attempting to publish message: {message}")
         result = client.publish(TOPIC, message)
@@ -75,14 +85,7 @@ def publish_message(message):
             logger.info(f"Message queued successfully. Message ID: {result[1]}")
         else:
             logger.error(f"Failed to publish message. Result code: {result[0]}")
-        
-        # Wait a moment for the publish to complete
-        import time
-        time.sleep(2)
-        
-        client.loop_stop()
-        client.disconnect()
-        
+            
     except Exception as e:
         logger.error(f"Error in publish_message: {str(e)}", exc_info=True)
 
