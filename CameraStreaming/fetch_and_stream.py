@@ -49,7 +49,16 @@ def start_ffmpeg(rtsp_url):
 
     return process
 
+def setup_tailscale_funnel():
+    try:
+        command = ["tailscale", "funnel", "--bg", "80"]
+        subprocess.Popen(command)
+        publish_log("Started Tailscale funnel on port 80")
+    except Exception as e:
+        publish_log(f"Failed to start Tailscale funnel: {e}")
+
 if __name__ == "__main__":
+    setup_tailscale_funnel()
     while True:
         rtsp_url = fetch_rtsp_url()
         if rtsp_url:
