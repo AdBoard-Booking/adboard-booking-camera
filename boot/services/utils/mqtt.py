@@ -1,16 +1,25 @@
 import paho.mqtt.client as mqtt
 import logging
+from utils import get_cpu_serial
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+DEVICE_ID = get_cpu_serial()    
 
 # EMQX Broker Settings
 BROKER = '67eb329c985848aa8f600b2543575c8e.s1.eu.hivemq.cloud'
 PORT = 8883
-TOPIC = "traffic/alerts"
+TOPIC = f"devicelogs/{DEVICE_ID}"
 USERNAME = "test123"    # Add your EMQX username here
 PASSWORD = "Test@123"    # Add your EMQX password here
+
+# Set up logging only if debug is enabled
+DEBUG = False  # Set this to True to enable debug logging
+
+if DEBUG:
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger(__name__)
+else:
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.NullHandler())
 
 # Callback functions for debugging
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -76,6 +85,10 @@ def publish_message(message):
         
     except Exception as e:
         logger.error(f"Error in publish_message: {str(e)}", exc_info=True)
+
+def publish_log(message):
+    print(message)
+    publish_message(message)
 
 if __name__ == "__main__":
     message = "Car detected at intersection at 10:45 AM"

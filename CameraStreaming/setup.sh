@@ -107,7 +107,7 @@ Description=FFmpeg RTSP to HLS Stream
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 $SCRIPT_DIR/fetch_and_stream.py
+ExecStart=/home/pi/.pyenv/shims/python $SCRIPT_DIR/fetch_and_stream.py
 Restart=always
 RestartSec=10
 StandardOutput=file:/var/log/ffmpeg_stream.log

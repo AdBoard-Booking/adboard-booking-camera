@@ -1,3 +1,15 @@
+# How to debug
+
+cat /etc/systemd/system/ffmpeg-stream.service
+
+sudo systemctl status ffmpeg-stream
+
+sudo systemctl enable ffmpeg-stream
+sudo systemctl stop ffmpeg-stream
+sudo systemctl start ffmpeg-stream
+
+#########################################################
+
 sudo apt update
 sudo apt install nginx ffmpeg -y
 
