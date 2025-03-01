@@ -61,13 +61,20 @@ class MonitoringService:
             self.init_billboard_monitoring()
 
     def init_traffic_monitoring(self):
-        """Simplified initialization without batch processing"""
         logging.info("Initializing traffic monitoring")
         self.traffic_config = self.config["services"]["trafficMonitoring"]
         
-        # Initialize YOLO model and tracker
-        self.model = YOLO("yolov8n.pt")
-        self.tracker = sv.ByteTrack()
+        # Initialize YOLO model with optimized settings
+        self.model = YOLO("yolov8n.pt")  # Using the smallest model for speed
+        
+        # Configure ByteTrack with more sensitive settings
+        self.tracker = sv.ByteTrack(
+            track_activation_threshold=0.25,      # Lower threshold to detect more objects (default 0.45)
+            lost_track_buffer=30,        # Increase track buffer for better continuity
+            minimum_matching_threshold=0.8,       # Higher matching threshold for better identity preservation
+            frame_rate=10,          # Expected frame rate on RPi
+            # track_high_thresh=0.5   # Lower high threshold for detection
+        )
         
         # Traffic monitoring specific settings
         self.unique_objects = defaultdict(set)
@@ -88,28 +95,39 @@ class MonitoringService:
                 time.sleep(1)  # Wait before retrying
 
     def run_monitoring(self):
-        """Combined monitoring loop for both traffic and billboard monitoring"""
+        """Combined monitoring loop with optimized processing"""
         billboard_last_check = 0
         billboard_interval = self.billboard_config.get("apiCallInterval", 60) if hasattr(self, 'billboard_config') else 0
         services = self.config.get("services", {})
+        
+        # Add frame skip counter for traffic monitoring
+        frame_counter = 0
+        process_every_n_frames = 1  # Process every 3rd frame for traffic monitoring
 
         while True:
             current_time = time.time()
             
             with self.frame_lock:
                 if self.latest_frame is None:
-                    time.sleep(0.1)  # Short sleep if no frame
                     continue
                 frame = self.latest_frame.copy()
 
-            # Traffic monitoring
+            # Traffic monitoring with frame skipping
             if "trafficMonitoring" in services:
-                results = self.model(frame, verbose=bool(args.verbose))
-                detections = sv.Detections.from_ultralytics(results[0])
-                detections = self.tracker.update_with_detections(detections)
+                frame_counter += 1
+                if frame_counter % process_every_n_frames == 0:  # Process every Nth frame
+                    # Resize frame for faster processing
+                    resized_frame = cv2.resize(frame, (640, 384))
+                    
+                    results = self.model(
+                        resized_frame, 
+                    )
+                    
+                    detections = sv.Detections.from_ultralytics(results[0])
+                    detections = self.tracker.update_with_detections(detections)
 
-                if detections.tracker_id is not None:
-                    self.process_detections(detections, None, datetime.datetime.now())
+                    if detections.tracker_id is not None:
+                        self.process_detections(detections, None, datetime.datetime.now())
 
             # Billboard monitoring
             if "billboardMonitoring" in services and \
@@ -125,6 +143,13 @@ class MonitoringService:
 
             # Display frame if requested
             if self.IMG_SHOW:
+                # Draw detection boxes if available
+                if "trafficMonitoring" in services and frame_counter % process_every_n_frames == 0:
+                    box_annotator = sv.BoxAnnotator()
+                    frame = box_annotator.annotate(
+                        scene=frame, 
+                        detections=detections
+                    )
                 cv2.imshow("Monitoring", frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break

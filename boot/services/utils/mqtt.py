@@ -73,12 +73,12 @@ class MQTTClient:
             
         return MQTTClient._instance
 
-def publish_message(message):
+def publish_message(message, topic=TOPIC):
     try:
         client = MQTTClient.get_instance()
         
         logger.info(f"Attempting to publish message: {message}")
-        result = client.publish(TOPIC, message)
+        result = client.publish(topic, message)
         
         # Check if the message was published
         if result[0] == 0:
@@ -89,9 +89,9 @@ def publish_message(message):
     except Exception as e:
         logger.error(f"Error in publish_message: {str(e)}", exc_info=True)
 
-def publish_log(message):
-    print(message)
-    publish_message(message)
+def publish_log(message, topic):
+    print(message)  
+    publish_message(message, f"{TOPIC}/{topic}")
 
 if __name__ == "__main__":
     message = "Car detected at intersection at 10:45 AM"

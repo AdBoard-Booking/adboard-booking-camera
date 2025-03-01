@@ -4,6 +4,14 @@ import threading
 import supervision as sv
 from collections import defaultdict
 from ultralytics import YOLO
+import os
+import sys
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+utils_folder = os.path.join(current_dir, '..','boot','services','utils')
+sys.path.append(utils_folder)
+
+from mqtt import publish_log
 
 # Load YOLO model
 model = YOLO("yolov8n.pt")
@@ -20,7 +28,9 @@ latest_frame = None
 frame_lock = threading.Lock()
 
 # Dictionary to track unique objects per class
-unique_objects = defaultdict(int)  # To count unique objects over time
+unique_objects = defaultdict(set)  # To count unique objects over time
+
+
 
 
 def capture_frames():
@@ -54,17 +64,20 @@ def process_frames():
         class_labels = [model.names[class_id] for class_id in class_ids]
         tracker_ids = detections.tracker_id  # Get tracker IDs
         
-        # Format detected objects in the current frame
-        current_frame_objects = [f"{cls}:#{tid}" for cls, tid in zip(class_labels, tracker_ids)]
-       
-        print(f"Current: {current_frame_objects}")
-        # print(f"{total_unique_formatted}")
+        class_ids = detections.class_id
+        # class_labels = [model.names[class_id] for class_id in class_ids]
+        tracker_ids = detections.tracker_id  # Get tracker IDs
+        
+        for class_id, track_id in zip(class_ids,tracker_ids):
+        
+            class_name = model.names[class_id]  # Get class name
 
-        # Draw bounding boxes and IDs
-        # annotated_frame = sv.draw_bounding_boxes(frame, tracked_objects)
-
-        # Display the frame
-        # cv2.imshow("Object Tracking", annotated_frame)
+            # Check if the object is newly detected
+            if track_id not in unique_objects[class_name]:
+                unique_objects[class_name].add(track_id)  # Track unique object
+                publish_log(f"New detection: {class_name} (ID: {track_id})")
+                
+      
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
