@@ -20,7 +20,7 @@ cat <<EOL | sudo tee /var/www/stream/index.html
     <title>Camera stream</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
-<body>
+<body style="margin: 0; padding: 0;">
     <video id="video" controls autoplay style="width: 100%;"></video>
     <script>
         let url = new URLSearchParams(window.location.search).get('url') || '/stream/live.m3u8';
@@ -54,7 +54,7 @@ cat <<EOL | sudo tee /etc/nginx/sites-available/default
 server {
     listen 80;
 
-    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost https://*.adboardbooking.com";
+    add_header Content-Security-Policy "frame-ancestors 'self' http://localhost:3002 https://*.adboardbooking.com";
     add_header 'Access-Control-Allow-Origin' '*';
     add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
     add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
