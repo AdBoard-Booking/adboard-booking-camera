@@ -132,7 +132,7 @@ def process_frames2():
 
         #create a json object with the new count and the count window
         json_object = {
-            "timestamp": int(time.time()),
+            "timestamp": int(time.time())*1000,
             "count": new_count
         }
 

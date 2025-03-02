@@ -20,19 +20,19 @@ from mqtt import publish_log
 def fetch_rtsp_url():
     try:
         config = load_config_for_device()
-        publish_log(f"Config: {config}")
+        publish_log(f"Config: {config}",'info')
         if not config:
-            publish_log("Failed to load configuration")
+            publish_log("Failed to load configuration",'error')
             return None
             
         rtsp_url = config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
         if not rtsp_url:
-            publish_log("No RTSP URL found in configuration")
+            publish_log("No RTSP URL found in configuration",'error')
             return None
             
         return rtsp_url
     except Exception as e:
-        publish_log(f"Error fetching configuration: {e}")
+        publish_log(f"Error fetching configuration: {e}",'error')
     return None
 
 def start_ffmpeg(rtsp_url):
@@ -53,9 +53,9 @@ if __name__ == "__main__":
     while True:
         rtsp_url = fetch_rtsp_url()
         if rtsp_url:
-            publish_log(f"Starting stream from: {rtsp_url}")
+            publish_log(f"Starting stream from: {rtsp_url}",'info')
             process = start_ffmpeg(rtsp_url)
             process.wait()
         else:
-            publish_log("Failed to fetch RTSP URL. Retrying in 10 seconds...")
+            publish_log("Failed to fetch RTSP URL. Retrying in 10 seconds...", 'error')
         time.sleep(10) 
