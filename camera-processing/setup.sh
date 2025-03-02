@@ -31,6 +31,7 @@ Description=Camera Processing
 After=network.target
 
 [Service]
+ExecStartPre=sh $SCRIPT_DIR/pre-start.sh
 ExecStart=/home/pi/.pyenv/shims/python $SCRIPT_DIR/streaming_fast_new_publish.py
 Restart=always
 RestartSec=10
@@ -54,6 +55,6 @@ echo "Setup completed successfully!"
 
 # debug process
 # sudo systemctl status camera-processing
-# journalctl -xe -u camera-processing
+# sudo journalctl -xe -u camera-processing
 # tail -f /var/log/camera-processing.log
 # tail -f /var/log/camera-processing.err
