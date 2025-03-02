@@ -10,21 +10,46 @@ import time
 import statistics
 import datetime
 import json
+import requests
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 utils_folder = os.path.join(current_dir, '..','boot','services','utils')
 sys.path.append(utils_folder)
 
 from mqtt import publish_log
-
+from utils import load_config_for_device
 # Load YOLO model
 model = YOLO("yolov8n.pt")
 
 # Initialize Supervision tracker (ByteTrack)
 tracker = sv.ByteTrack()
 
-# RTSP Camera Stream
-RTSP_URL = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"
+def get_rtsp_url():
+    try:
+        config = load_config_for_device()
+        publish_log(f"Config: {config}",'info')
+        if not config:
+            publish_log("Failed to load configuration",'error')
+            return None
+            
+        rtsp_url = config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
+        if not rtsp_url:
+            publish_log("No RTSP URL found in configuration",'error')
+            return None
+            
+        return rtsp_url
+    except Exception as e:
+        print(f"Error fetching RTSP URL: {str(e)}")
+        publish_log(f"Error fetching RTSP URL: {str(e)}", "error")
+        return None
+
+# Get initial RTSP URL
+RTSP_URL = get_rtsp_url()
+if not RTSP_URL:
+    RTSP_URL = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"  # fallback URL
+    print(f"Using fallback RTSP URL: {RTSP_URL}")
+    publish_log("Using fallback RTSP URL", "warning")
+
 cap = cv2.VideoCapture(RTSP_URL)
 
 # Latest frame storage with thread lock
@@ -36,7 +61,7 @@ unique_objects = defaultdict(set)  # To count unique objects over time
 
 def capture_frames():
     """ Continuously capture frames and update the latest frame """
-    global latest_frame, cap
+    global latest_frame, cap, RTSP_URL
     while True:
         if not cap.isOpened():
             print(f"Error: Unable to connect to stream {RTSP_URL}. Retrying in 10 seconds...")

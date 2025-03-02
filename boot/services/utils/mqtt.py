@@ -6,6 +6,7 @@ DEVICE_ID = get_cpu_serial()
 
 # EMQX Broker Settings
 BROKER = '67eb329c985848aa8f600b2543575c8e.s1.eu.hivemq.cloud'
+# BROKER='ie2c39d3.ala.us-east-1.emqxsl.com'
 PORT = 8883
 TOPIC = f"devicelogs/{DEVICE_ID}"
 USERNAME = "test123"    # Add your EMQX username here
