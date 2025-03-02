@@ -127,3 +127,13 @@ systemctl start ffmpeg-stream
 echo "FFmpeg streaming service created and started."
 
 echo "Setup completed successfully!"
+
+
+# reload service
+# sudo systemctl daemon-reload
+# sudo systemctl enable ffmpeg-stream
+# sudo systemctl start ffmpeg-stream
+
+# # check status
+# sudo systemctl status ffmpeg-stream
+

@@ -44,8 +44,19 @@ def start_ffmpeg(rtsp_url):
     ]
     process = subprocess.Popen(
         command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         universal_newlines=True
     )
+
+    # Create separate threads to handle stdout and stderr
+    def log_output(pipe, log_type):
+        for line in pipe:
+            publish_log(line.strip(), log_type)
+
+    from threading import Thread
+    Thread(target=log_output, args=(process.stdout, 'info')).start()
+    Thread(target=log_output, args=(process.stderr, 'error')).start()
 
     return process
 
