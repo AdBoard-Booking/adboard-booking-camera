@@ -50,13 +50,12 @@ def start_ffmpeg(rtsp_url):
     )
 
     # Create separate threads to handle stdout and stderr
-    def log_output(pipe, log_type):
+    def log_output(pipe):
         for line in pipe:
-            publish_log(line.strip(), log_type)
-
+            print(line.strip())
+            
     from threading import Thread
-    Thread(target=log_output, args=(process.stdout, 'info')).start()
-    Thread(target=log_output, args=(process.stderr, 'error')).start()
+    Thread(target=log_output, args=(process.stdout,)).start()
 
     return process
 

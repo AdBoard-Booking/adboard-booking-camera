@@ -5,6 +5,8 @@ import supervision as sv
 from collections import defaultdict
 from ultralytics import YOLO
 import os
+import re
+import base64
 import sys
 import time
 import statistics
@@ -24,9 +26,10 @@ model = YOLO("yolov8n.pt")
 # Initialize Supervision tracker (ByteTrack)
 tracker = sv.ByteTrack()
 
+config = load_config_for_device()
+
 def get_rtsp_url():
     try:
-        config = load_config_for_device()
         publish_log(f"Config: {config}",'info')
         if not config:
             publish_log("Failed to load configuration",'error')
@@ -81,6 +84,81 @@ def capture_frames():
 
         with frame_lock:
             latest_frame = frame
+
+def analyze_image(image_blob):
+    billboardMonitoring = config['services']['billboardMonitoring']
+    OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
+    print("Analyzing image using OpenRouter AI")
+    payload = {
+        "model": "qwen/qwen2.5-vl-72b-instruct:free",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. Return a JSON response in the structure {hasScreenDefects:true, hasPatches:true, isOnline:true, details:''} that can be used directly in code."},
+                    {
+                        "type": "image_url",
+                        "image_url":{
+                            "url": f"data:image/jpeg;base64,{image_blob}"
+                        }
+                     }
+                ]
+            }
+        ]
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        response = response.json()
+        
+        output = response.get("choices")[0].get("message").get("content")
+        cleaned_string = match = re.search(r'```json\n(.*?)\n```', output, re.DOTALL)
+        
+        if match: 
+            json_string = match.group(1).strip() # Extract JSON content 
+            
+            json_object = json.loads(json_string) # Con
+            
+            print(f"Image analysis completed successfully")
+            return json_object
+    else:
+        publish_log(f"OpenRouter AI request failed {response.json()}", "error")
+        return None
+
+
+def monitor_billboard():
+    global latest_frame
+    while True:
+        try:
+            with frame_lock:
+                if latest_frame is None:
+                    print("No frame available, waiting...")
+                    time.sleep(10)
+                    continue
+                frame = latest_frame.copy()
+            
+            _, buffer = cv2.imencode(".jpg", frame)
+            image_blob = base64.b64encode(buffer).decode("utf-8")
+            analysis_result = analyze_image(image_blob)
+
+            if not analysis_result:
+                publish_log("Failed to analyze image", "error")
+            else:
+                publish_log(json.dumps(analysis_result), "billboardMonitoring")
+                print("Billboard monitoring completed, waiting for next interval")
+            
+            # Wait for 30 minutes before next analysis
+            time.sleep(30 * 60)  # 30 minutes in seconds
+            
+        except Exception as e:
+            print(f"Error in monitor_billboard: {str(e)}")
+            publish_log(f"Billboard monitoring error: {str(e)}", "error")
+            time.sleep(60)  # Wait a minute before retrying if there's an error
 
 def process_frames2():
     print("Starting process_frames2...")  # Add debug log
@@ -236,15 +314,17 @@ def process_frames():
 
 # Start threads
 def main():
-    print("Starting camera processing...")  # Add debug log
+    print("Starting camera processing...")
     sys.stdout.flush()
     
     capture_thread = threading.Thread(target=capture_frames, daemon=True)
     process_thread = threading.Thread(target=process_frames2, daemon=True)
+    billboard_thread = threading.Thread(target=monitor_billboard, daemon=True)
 
-    try:  # Add try-except block for better error handling
+    try:
         capture_thread.start()
         process_thread.start()
+        billboard_thread.start()  # Start the billboard monitoring thread
 
         # Keep main thread alive and flush output
         while True:

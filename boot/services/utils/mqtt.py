@@ -1,6 +1,8 @@
 import paho.mqtt.client as mqtt
 import logging
 from utils import get_cpu_serial
+import json
+from datetime import datetime
 
 DEVICE_ID = get_cpu_serial()    
 
@@ -8,7 +10,7 @@ DEVICE_ID = get_cpu_serial()
 BROKER = '67eb329c985848aa8f600b2543575c8e.s1.eu.hivemq.cloud'
 # BROKER='ie2c39d3.ala.us-east-1.emqxsl.com'
 PORT = 8883
-TOPIC = f"devicelogs/{DEVICE_ID}"
+TOPIC = f"logs/{DEVICE_ID}"
 USERNAME = "test123"    # Add your EMQX username here
 PASSWORD = "Test@123"    # Add your EMQX password here
 
@@ -47,6 +49,7 @@ def on_log(client, userdata, level, buf):
 
 class MQTTClient:
     _instance = None
+    _is_connected = False
     
     @staticmethod
     def get_instance():
@@ -55,7 +58,7 @@ class MQTTClient:
             client = MQTTClient._instance
             
             # Set up callbacks
-            client.on_connect = on_connect
+            client.on_connect = lambda client, userdata, flags, rc, properties=None: MQTTClient._on_connect(client, userdata, flags, rc, properties)
             client.on_disconnect = on_disconnect
             client.on_publish = on_publish
             client.on_log = on_log
@@ -74,12 +77,61 @@ class MQTTClient:
             
         return MQTTClient._instance
 
+    @staticmethod
+    def _on_connect(client, userdata, flags, rc, properties=None):
+        MQTTClient._is_connected = (rc == 0)
+        if rc == 0:
+            logger.info("Connected to MQTT Broker!")
+        else:
+            logger.error(f"Failed to connect, return code {rc}")
+
+    @staticmethod
+    def wait_for_connection(timeout=10):
+        """Wait for the connection to be established"""
+        import time
+        start_time = time.time()
+        while not MQTTClient._is_connected:
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Connection timeout")
+            time.sleep(0.1)
+
 def publish_message(message, topic=TOPIC):
     try:
         client = MQTTClient.get_instance()
         
-        logger.info(f"Attempting to publish message: {message}")
-        result = client.publish(topic, message)
+        # Wait for connection before publishing
+        try:
+            MQTTClient.wait_for_connection()
+        except TimeoutError:
+            logger.error("Timed out waiting for MQTT connection")
+            return
+            
+        # Convert message to JSON if it's not already
+        if isinstance(message, str):
+            try:
+                # Check if the string is already valid JSON
+                json.loads(message)
+                msg_dict = message
+            except json.JSONDecodeError:
+                # If not JSON, create a new JSON object
+                msg_dict = {
+                    "message": message,
+                    "timestamp": datetime.now().isoformat()
+                }
+                msg_dict = json.dumps(msg_dict)
+        else:
+            # If message is dict or other type, convert to JSON
+            if isinstance(message, dict):
+                message["timestamp"] = datetime.now().isoformat()
+                msg_dict = json.dumps(message)
+            else:
+                msg_dict = json.dumps({
+                    "message": str(message),
+                    "timestamp": datetime.now().isoformat()
+                })
+            
+        logger.info(f"Attempting to publish message: {msg_dict}")
+        result = client.publish(topic, msg_dict)
         
         # Check if the message was published
         if result[0] == 0:
@@ -92,7 +144,7 @@ def publish_message(message, topic=TOPIC):
 
 def publish_log(message, topic):
     print(message)  
-    publish_message(message, f"{TOPIC}/{topic}")
+    publish_message(message, f"{topic}/{DEVICE_ID}")
 
 if __name__ == "__main__":
     message = "Car detected at intersection at 10:45 AM"
