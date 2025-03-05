@@ -119,7 +119,7 @@ def publish_message(message, topic=TOPIC):
             try:
                 # Check if the string is already valid JSON
                 json.loads(message)
-                msg_dict = message
+                msg_dict = message             
             except json.JSONDecodeError:
                 # If not JSON, create a new JSON object
                 msg_dict = {

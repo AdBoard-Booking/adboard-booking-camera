@@ -173,7 +173,7 @@ def monitor_billboard():
                 time.sleep(60)
                 continue
 
-            publish_log(json.dumps(analysis_result), "billboardMonitoring")
+            publish_log(analysis_result, "billboardMonitoring")
             
             monitoring_interval = config['services']['billboardMonitoring'].get('monitoringInterval', 30)
             time.sleep(monitoring_interval * 60)
