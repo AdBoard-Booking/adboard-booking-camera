@@ -19,6 +19,8 @@ import logging
 ist_tz = pytz.timezone('Asia/Kolkata')
 logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
 
+CONFIG_REFRESH_INTERVAL = 300
+
 # Configure logging to write to stdout
 logging.basicConfig(
     level=logging.INFO,
@@ -44,19 +46,29 @@ model = YOLO("yolov8n.pt")
 # Initialize Supervision tracker (ByteTrack)
 tracker = sv.ByteTrack()
 
-config = load_config_for_device()
+# Update global variables
+config_lock = threading.Lock()
+global_config = None
 
-def get_rtsp_url():
-    return config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
+def update_config():
+    """Continuously update config in background"""
+    global global_config
+    while True:
+        try:
+            new_config = load_config_for_device()
+            if new_config:  # Only update if we got a valid config
+                with config_lock:
+                    global_config = new_config
+                logger.info("Configuration refreshed successfully")
+        except Exception as e:
+            logger.error(f"Error refreshing config: {str(e)}")
+        
+        time.sleep(CONFIG_REFRESH_INTERVAL)
 
-# Get initial RTSP URL
-RTSP_URL = get_rtsp_url()
-logger.info(f"Using RTSP URL: {RTSP_URL}") 
-if not RTSP_URL:
-    RTSP_URL = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"  # fallback URL
-    print(f"Using fallback RTSP URL: {RTSP_URL}")
-
-cap = cv2.VideoCapture(RTSP_URL)
+def get_current_config():
+    """Thread-safe getter for current config"""
+    with config_lock:
+        return global_config
 
 # Latest frame storage with thread lock
 latest_frame = None
@@ -67,39 +79,63 @@ unique_objects = defaultdict(set)  # To count unique objects over time
 
 def capture_frames():
     """ Continuously capture frames and update the latest frame """
-    global latest_frame, cap, RTSP_URL
-    while True:
-        if not cap.isOpened():
-            
-            # Try to get new RTSP URL before reconnecting
-            new_url = get_rtsp_url()
-            if new_url and new_url != RTSP_URL:
-                RTSP_URL = new_url
-            
-            time.sleep(10)
-            cap = cv2.VideoCapture(RTSP_URL)
-            continue
+    global latest_frame, cap
+    connection_attempts = 0
+    max_attempts = 3
+    retry_delay = 10
 
-        ret, frame = cap.read()
-        if not ret:
+    while True:
+        current_config = get_current_config()
+        if not current_config:
+            time.sleep(5)
+            continue
+            
+        current_url = current_config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
+        if not current_url:
+            current_url = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"  # fallback URL
+        
+        try:
+            cap = cv2.VideoCapture(current_url)
+            if not cap.isOpened():
+                connection_attempts += 1
+                logger.warning(f"Failed to open video stream (attempt {connection_attempts}/{max_attempts})")
+                
+                if connection_attempts >= max_attempts:
+                    logger.error(f"Failed to connect to stream after {max_attempts} attempts. Waiting longer before retry.")
+                    time.sleep(retry_delay * 2)  # Longer wait after multiple failures
+                    connection_attempts = 0
+                else:
+                    time.sleep(retry_delay)
+                continue
+
+            # Reset connection attempts on successful connection
+            connection_attempts = 0
+            logger.info("Successfully connected to video stream")
+
+            while cap.isOpened():  # Keep reading while connection is good
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                with frame_lock:
+                    latest_frame = frame
+
+            # If we exit the while loop, the connection was lost
+            logger.warning("Lost connection to video stream")
             cap.release()
             
-            new_url = get_rtsp_url()
-            if new_url and new_url != RTSP_URL:
-                RTSP_URL = new_url
-                
-            time.sleep(10)
-            cap = cv2.VideoCapture(RTSP_URL)
-            continue
-
-        with frame_lock:
-            latest_frame = frame
+        except Exception as e:
+            logger.error(f"Error in video capture: {str(e)}")
+            if cap:
+                cap.release()
+            time.sleep(retry_delay)
 
 def analyze_image(image_blob):
     try:
-        
+        config = get_current_config()  # Use get_current_config instead of direct load
         if not config or 'services' not in config or 'billboardMonitoring' not in config['services']:
-            
+            logger.error("Missing billboard monitoring configuration")
+            publish_log("Missing billboard monitoring configuration", "error")
             return None
 
         billboardMonitoring = config['services']['billboardMonitoring']
@@ -155,7 +191,10 @@ def monitor_billboard():
     global latest_frame
     while True:
         try:
+            config = get_current_config()  # Use get_current_config instead of direct load
             if not config or 'services' not in config or 'billboardMonitoring' not in config['services']:
+                logger.error("Missing billboard monitoring configuration, retrying in 60 seconds")
+                publish_log("Missing billboard monitoring configuration, retrying in 60 seconds", "error")
                 time.sleep(60)
                 continue
 
@@ -335,16 +374,18 @@ def process_frames():
 def main():
     sys.stdout.flush()
     
+    config_thread = threading.Thread(target=update_config, daemon=True)
     capture_thread = threading.Thread(target=capture_frames, daemon=True)
     process_thread = threading.Thread(target=process_frames2, daemon=True)
     billboard_thread = threading.Thread(target=monitor_billboard, daemon=True)
 
     try:
+        config_thread.start()  # Start config update thread first
+        time.sleep(2)  # Give it time to get initial config
         capture_thread.start()
         process_thread.start()
-        billboard_thread.start()  # Start the billboard monitoring thread
+        billboard_thread.start()
 
-        # Keep main thread alive and flush output
         while True:
             sys.stdout.flush()
             time.sleep(1)
