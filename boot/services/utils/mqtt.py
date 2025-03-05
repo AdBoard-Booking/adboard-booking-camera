@@ -17,12 +17,13 @@ PASSWORD = "Test@123"    # Add your EMQX password here
 # Set up logging only if debug is enabled
 DEBUG = False  # Set this to True to enable debug logging
 
+logger = logging.getLogger(__name__)
 if DEBUG:
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger(__name__)
 else:
-    logger = logging.getLogger(__name__)
     logger.addHandler(logging.NullHandler())
+    logger.setLevel(logging.INFO)  # Set to CRITICAL to disable INFO, WARNING, and DEBUG logs
+
 
 # Callback functions for debugging
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -42,7 +43,7 @@ def on_disconnect(client, userdata, rc, properties=None):
     logger.info(f"Disconnected with result code: {rc}")
 
 def on_publish(client, userdata, mid, properties=None):
-    logger.info(f"Message {mid} published successfully")
+    logger.debug(f"Message {mid} published successfully")
 
 def on_log(client, userdata, level, buf):
     logger.debug(f"MQTT Log: {buf}")
@@ -69,7 +70,7 @@ class MQTTClient:
             # Set username and password
             client.username_pw_set(USERNAME, PASSWORD)
             
-            logger.info(f"Attempting to connect to {BROKER}:{PORT}")
+            logger.debug(f"Attempting to connect to {BROKER}:{PORT}")
             client.connect(BROKER, PORT, keepalive=60)
             
             # Start the loop in a background thread
@@ -130,12 +131,12 @@ def publish_message(message, topic=TOPIC):
                     "timestamp": datetime.now().isoformat()
                 })
             
-        logger.info(f"Attempting to publish message: {msg_dict}")
+        logger.debug(f"Attempting to publish message: {msg_dict}")
         result = client.publish(topic, msg_dict)
         
         # Check if the message was published
         if result[0] == 0:
-            logger.info(f"Message queued successfully. Message ID: {result[1]}")
+            logger.debug(f"Message queued successfully. Message ID: {result[1]}")
         else:
             logger.error(f"Failed to publish message. Result code: {result[0]}")
             
@@ -143,7 +144,7 @@ def publish_message(message, topic=TOPIC):
         logger.error(f"Error in publish_message: {str(e)}", exc_info=True)
 
 def publish_log(message, topic):
-    print(message)  
+    logger.info(f"Publishing log: {message} to topic: {topic}/{DEVICE_ID}")
     publish_message(message, f"{topic}/{DEVICE_ID}")
 
 if __name__ == "__main__":

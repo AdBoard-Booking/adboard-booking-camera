@@ -13,13 +13,22 @@ import statistics
 import datetime
 import json
 import requests
+import pytz
+import logging
 
+ist_tz = pytz.timezone('Asia/Kolkata')
+logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
+logging.basicConfig(level=logging.INFO, format='%(asctime)s IST - %(levelname)s - %(message)s')
+
+
+# Set up logging
 current_dir = os.path.dirname(os.path.abspath(__file__))
 utils_folder = os.path.join(current_dir, '..','boot','services','utils')
 sys.path.append(utils_folder)
 
-from mqtt import publish_log
 from utils import load_config_for_device
+from mqtt import publish_log
+
 # Load YOLO model
 model = YOLO("yolov8n.pt")
 
@@ -29,29 +38,14 @@ tracker = sv.ByteTrack()
 config = load_config_for_device()
 
 def get_rtsp_url():
-    try:
-        publish_log(f"Config: {config}",'info')
-        if not config:
-            publish_log("Failed to load configuration",'error')
-            return None
-            
-        rtsp_url = config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
-        if not rtsp_url:
-            publish_log("No RTSP URL found in configuration",'error')
-            return None
-            
-        return rtsp_url
-    except Exception as e:
-        print(f"Error fetching RTSP URL: {str(e)}")
-        publish_log(f"Error fetching RTSP URL: {str(e)}", "error")
-        return None
+    return config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
 
 # Get initial RTSP URL
 RTSP_URL = get_rtsp_url()
+logging.info(f"Using RTSP URL: {RTSP_URL}") 
 if not RTSP_URL:
     RTSP_URL = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"  # fallback URL
     print(f"Using fallback RTSP URL: {RTSP_URL}")
-    publish_log("Using fallback RTSP URL", "warning")
 
 cap = cv2.VideoCapture(RTSP_URL)
 
@@ -67,17 +61,24 @@ def capture_frames():
     global latest_frame, cap, RTSP_URL
     while True:
         if not cap.isOpened():
-            print(f"Error: Unable to connect to stream {RTSP_URL}. Retrying in 10 seconds...")
-            publish_log("Camera stream connection failed. Retrying in 10 seconds...", "error")
+            
+            # Try to get new RTSP URL before reconnecting
+            new_url = get_rtsp_url()
+            if new_url and new_url != RTSP_URL:
+                RTSP_URL = new_url
+            
             time.sleep(10)
             cap = cv2.VideoCapture(RTSP_URL)
             continue
 
         ret, frame = cap.read()
         if not ret:
-            print("Error: Failed to read frame. Reconnecting to stream...")
-            publish_log("Failed to read frame. Reconnecting to stream...", "error")
             cap.release()
+            
+            new_url = get_rtsp_url()
+            if new_url and new_url != RTSP_URL:
+                RTSP_URL = new_url
+                
             time.sleep(10)
             cap = cv2.VideoCapture(RTSP_URL)
             continue
@@ -86,58 +87,71 @@ def capture_frames():
             latest_frame = frame
 
 def analyze_image(image_blob):
-    billboardMonitoring = config['services']['billboardMonitoring']
-    OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
-    print("Analyzing image using OpenRouter AI")
-    payload = {
-        "model": "qwen/qwen2.5-vl-72b-instruct:free",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. Return a JSON response in the structure {hasScreenDefects:true, hasPatches:true, isOnline:true, details:''} that can be used directly in code."},
-                    {
-                        "type": "image_url",
-                        "image_url":{
-                            "url": f"data:image/jpeg;base64,{image_blob}"
-                        }
-                     }
-                ]
-            }
-        ]
-    }
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    try:
+        
+        if not config or 'services' not in config or 'billboardMonitoring' not in config['services']:
+            
+            return None
 
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
-    
-    if response.status_code == 200:
-        response = response.json()
+        billboardMonitoring = config['services']['billboardMonitoring']
+        OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
         
-        output = response.get("choices")[0].get("message").get("content")
-        cleaned_string = match = re.search(r'```json\n(.*?)\n```', output, re.DOTALL)
+        if not OPENROUTER_API_KEY:
+            return None
+
         
-        if match: 
-            json_string = match.group(1).strip() # Extract JSON content 
+        payload = {
+            "model": "qwen/qwen2.5-vl-72b-instruct:free",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. Return a JSON response in the structure {hasScreenDefects:true, hasPatches:true, isOnline:true, details:''} that can be used directly in code."},
+                        {
+                            "type": "image_url",
+                            "image_url":{
+                                "url": f"data:image/jpeg;base64,{image_blob}"
+                            }
+                         }
+                    ]
+                }
+            ]
+        }
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            response = response.json()
             
-            json_object = json.loads(json_string) # Con
+            output = response.get("choices")[0].get("message").get("content")
+            cleaned_string = match = re.search(r'```json\n(.*?)\n```', output, re.DOTALL)
             
-            print(f"Image analysis completed successfully")
-            return json_object
-    else:
-        publish_log(f"OpenRouter AI request failed {response.json()}", "error")
+            if match: 
+                json_string = match.group(1).strip() # Extract JSON content 
+                
+                json_object = json.loads(json_string) # Con
+                
+                
+                return json_object
+        else:
+            return None
+    except Exception as e:
         return None
-
 
 def monitor_billboard():
     global latest_frame
     while True:
         try:
+            if not config or 'services' not in config or 'billboardMonitoring' not in config['services']:
+                time.sleep(60)
+                continue
+
             with frame_lock:
                 if latest_frame is None:
-                    print("No frame available, waiting...")
                     time.sleep(10)
                     continue
                 frame = latest_frame.copy()
@@ -147,21 +161,19 @@ def monitor_billboard():
             analysis_result = analyze_image(image_blob)
 
             if not analysis_result:
-                publish_log("Failed to analyze image", "error")
-            else:
-                publish_log(json.dumps(analysis_result), "billboardMonitoring")
-                print("Billboard monitoring completed, waiting for next interval")
+                time.sleep(60)
+                continue
+
+            publish_log(json.dumps(analysis_result), "billboardMonitoring")
             
-            # Wait for 30 minutes before next analysis
-            time.sleep(30 * 60)  # 30 minutes in seconds
+            monitoring_interval = config['services']['billboardMonitoring'].get('monitoringInterval', 30)
+            time.sleep(monitoring_interval * 60)
             
         except Exception as e:
-            print(f"Error in monitor_billboard: {str(e)}")
-            publish_log(f"Billboard monitoring error: {str(e)}", "error")
-            time.sleep(60)  # Wait a minute before retrying if there's an error
+            time.sleep(60)
 
 def process_frames2():
-    print("Starting process_frames2...")  # Add debug log
+    
     count_window_size = 5
     LONG_STAY_THRESHOLD = 20
     count_window = defaultdict(list)
@@ -256,9 +268,9 @@ def process_frames2():
                 "count": new_count
             }
 
+
             #publish the json object to mqtt
             if(len(new_count) > 0):
-                print(f"Publishing traffic data: {json_object}")  # Add debug log
                 publish_log(json.dumps(json_object), "traffic")
                 sys.stdout.flush()  # Force flush
 
@@ -269,7 +281,6 @@ def process_frames2():
                 # print(f"Count window for {obj}: {count_window[obj]}")
             
         except Exception as e:
-            print(f"Error in process_frames2: {str(e)}")
             sys.stdout.flush()
             time.sleep(1)  # Add small delay to prevent tight error loops
 
@@ -306,7 +317,6 @@ def process_frames():
             # Check if the object is newly detected
             if track_id not in unique_objects[class_name]:
                 unique_objects[class_name].add(track_id)  # Track unique object
-                publish_log(f"New detection: {class_name} (ID: {track_id})",'info')
                 
       
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -314,7 +324,6 @@ def process_frames():
 
 # Start threads
 def main():
-    print("Starting camera processing...")
     sys.stdout.flush()
     
     capture_thread = threading.Thread(target=capture_frames, daemon=True)
@@ -332,10 +341,8 @@ def main():
             time.sleep(1)
 
     except KeyboardInterrupt:
-        print("Shutting down...")
         sys.exit(0)
     except Exception as e:
-        print(f"Error in main: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
