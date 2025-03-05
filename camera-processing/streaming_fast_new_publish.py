@@ -18,8 +18,17 @@ import logging
 
 ist_tz = pytz.timezone('Asia/Kolkata')
 logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
-logging.basicConfig(level=logging.INFO, format='%(asctime)s IST - %(levelname)s - %(message)s')
 
+# Configure logging to write to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # This ensures logs go to stdout
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 # Set up logging
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +51,7 @@ def get_rtsp_url():
 
 # Get initial RTSP URL
 RTSP_URL = get_rtsp_url()
-logging.info(f"Using RTSP URL: {RTSP_URL}") 
+logger.info(f"Using RTSP URL: {RTSP_URL}") 
 if not RTSP_URL:
     RTSP_URL = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"  # fallback URL
     print(f"Using fallback RTSP URL: {RTSP_URL}")

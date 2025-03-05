@@ -3,6 +3,7 @@ import logging
 from utils import get_cpu_serial
 import json
 from datetime import datetime
+import sys
 
 DEVICE_ID = get_cpu_serial()    
 
@@ -22,7 +23,13 @@ if DEBUG:
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 else:
     logger.addHandler(logging.NullHandler())
-    logger.setLevel(logging.INFO)  # Set to CRITICAL to disable INFO, WARNING, and DEBUG logs
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout)  # This ensures logs go to stdout
+        ]
+    ) # Set to CRITICAL to disable INFO, WARNING, and DEBUG logs
 
 
 # Callback functions for debugging
@@ -130,6 +137,7 @@ def publish_message(message, topic=TOPIC):
                     "message": str(message),
                     "timestamp": datetime.now().isoformat()
                 })
+        
             
         logger.debug(f"Attempting to publish message: {msg_dict}")
         result = client.publish(topic, msg_dict)
