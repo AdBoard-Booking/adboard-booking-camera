@@ -18,7 +18,6 @@ def load_config(device_id):
     try:
         response = requests.get(config_url, timeout=5)
         response.raise_for_status()
-        print(f"Configs: {response.json()}")
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Unable to load config: {e}")

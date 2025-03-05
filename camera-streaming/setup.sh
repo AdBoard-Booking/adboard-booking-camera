@@ -82,14 +82,6 @@ systemctl reload nginx
 
 echo "Nginx configured and reloaded."
 
-# Install FFmpeg if not installed
-if ! command -v ffmpeg &> /dev/null; then
-    echo "Installing FFmpeg..."
-    apt update && apt install -y ffmpeg
-else
-    echo "FFmpeg is already installed."
-fi
-
 # Copy Python script to destination
 echo "Installing Python script..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -130,8 +122,7 @@ echo "Setup completed successfully!"
 
 
 # reload service
-# sudo systemctl daemon-reload
-# sudo systemctl enable ffmpeg-stream
+# sudo systemctl stop ffmpeg-stream
 # sudo systemctl start ffmpeg-stream
 
 # # check status
