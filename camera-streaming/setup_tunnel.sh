@@ -1,6 +1,10 @@
 
 #!/bin/bash
 
+rm -rf /var/log/camera-streaming.log
+
+tailscale funnel
+sleep 5
 tailscale funnel --bg 80
 sleep 5
 

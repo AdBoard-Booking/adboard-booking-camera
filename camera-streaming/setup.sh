@@ -93,9 +93,9 @@ chmod +x /usr/local/bin/fetch_and_stream.py
 # pip3 install requests
 
 # Create systemd service
-cat <<EOL | sudo tee /etc/systemd/system/ffmpeg-stream.service
+cat <<EOL | sudo tee /etc/systemd/system/camera-streaming.service
 [Unit]
-Description=FFmpeg RTSP to HLS Stream
+Description=Camera Streaming
 After=network.target
 
 [Service]
@@ -103,8 +103,8 @@ ExecStartPre=sh $SCRIPT_DIR/setup_tunnel.sh
 ExecStart=/home/pi/.pyenv/shims/python $SCRIPT_DIR/fetch_and_stream.py
 Restart=always
 RestartSec=10
-StandardOutput=file:/var/log/ffmpeg_stream.log
-StandardError=file:/var/log/ffmpeg_stream.err
+StandardOutput=file:/var/log/camera-streaming.log
+StandardError=file:/var/log/camera-streaming.err
 User=root
 
 [Install]
@@ -113,18 +113,24 @@ EOL
 
 # Enable and start the service
 systemctl daemon-reload
-systemctl enable ffmpeg-stream
-systemctl start ffmpeg-stream
+systemctl enable camera-streaming
+systemctl start camera-streaming
 
-echo "FFmpeg streaming service created and started."
+echo "Camera streaming service created and started."
 
 echo "Setup completed successfully!"
 
 
 # reload service
-# sudo systemctl stop ffmpeg-stream
-# sudo systemctl start ffmpeg-stream
+# sudo systemctl stop camera-streaming
+# sudo systemctl start camera-streaming
 
 # # check status
-# sudo systemctl status ffmpeg-stream
+# sudo systemctl status camera-streaming
+
+# journalctl -u camera-streaming -f
+
+# tail -f /var/log/camera-streaming.log
+
+# tail -f /var/log/camera-streaming.err
 

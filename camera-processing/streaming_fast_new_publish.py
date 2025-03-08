@@ -16,6 +16,15 @@ import requests
 import pytz
 import logging
 
+# Set up logging
+current_dir = os.path.dirname(os.path.abspath(__file__))
+utils_folder = os.path.join(current_dir, '..','boot','services','utils')
+sys.path.append(utils_folder)
+
+from utils import load_config_for_device
+from mqtt import publish_log, subscribe_to_topic
+
+
 ist_tz = pytz.timezone('Asia/Kolkata')
 logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
 
@@ -32,13 +41,34 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Set up logging
-current_dir = os.path.dirname(os.path.abspath(__file__))
-utils_folder = os.path.join(current_dir, '..','boot','services','utils')
-sys.path.append(utils_folder)
+test_topic = "camera-processing"
 
-from utils import load_config_for_device
-from mqtt import publish_log
+def message_handler(client, userdata, message):
+    """Handle incoming MQTT messages"""
+    try:
+        topic = message.topic
+        payload = message.payload.decode()
+        
+        # Try to parse JSON if possible
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            pass  # Keep payload as string if it's not JSON
+            
+        logger.info(f"Received message on topic {topic}: {payload}")
+        
+        if topic.startswith(test_topic):
+            # Handle system topic messages
+            if payload == "reload":
+                logger.info("Reloading service")
+                # reload service
+                os.system(f"sudo systemctl restart {test_topic}")
+    except Exception as e:
+        logger.error(f"Error handling message: {str(e)}")
+
+# Subscribe to topic with message handler after logger is initialized
+subscribe_to_topic(test_topic, message_handler)
+
 
 # Load YOLO model
 model = YOLO("yolov8n.pt")
@@ -151,12 +181,13 @@ def analyze_image(image_blob):
         custom_instructions = config['billboardMonitoring'].get('customInstructions', '')
         
         payload = {
-            "model": "qwen/qwen2.5-vl-72b-instruct:free",
+            # "model": "qwen/qwen2.5-vl-72b-instruct:free",
+            "model": "google/gemini-flash-1.5-8b-exp",
             "messages": [
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": f"I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. It should not be pure black or white. Return a JSON response in the structure {{hasScreenDefects:true, hasPatches:true, isOnline:true, details:'' , currentlyPlaying:''}} that can be used directly in code. Custom instructions will suggest the location of the billboard. Custom instructions: {custom_instructions}"},
+                        {"type": "text", "text": f"I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. It should not be pure black or white. Return a JSON response in the structure {{hasScreenDefects:true,illumunated:true, hasPatches:true, isOnline:true, details:'' , currentlyPlaying:''}} that can be used directly in code. Custom instructions will suggest the location of the billboard. Custom instructions: {custom_instructions}"},
                         {
                             "type": "image_url",
                             "image_url":{

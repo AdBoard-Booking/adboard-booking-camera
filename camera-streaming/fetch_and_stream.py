@@ -18,10 +18,9 @@ adjacent_folder = os.path.join(current_dir, '..', 'boot', 'services', 'utils')  
 sys.path.append(adjacent_folder)
 
 from utils import load_config_for_device
-from mqtt import publish_log
+from mqtt import publish_log, subscribe_to_topic
 
-# Set up logging
-LOG_FILE = '/var/log/camera_stream.log'
+test_topic = "ffmpeg-stream"
 
 config_lock = threading.Lock()
 global_config = None
@@ -35,11 +34,37 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
+        logging.StreamHandler(sys.stdout)  # This ensures logs go to stdout
     ]
 )
+
 logger = logging.getLogger(__name__)
+
+def message_handler(client, userdata, message):
+    """Handle incoming MQTT messages"""
+    try:
+        topic = message.topic
+        payload = message.payload.decode()
+        
+        # Try to parse JSON if possible
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            pass  # Keep payload as string if it's not JSON
+            
+        logger.info(f"Received message on topic {topic}: {payload}")
+        
+        if topic.startswith(test_topic):
+            # Handle system topic messages
+            if payload == "reload":
+                logger.info("Reloading service")
+                # reload service
+                os.system("sudo systemctl restart ffmpeg-stream")
+    except Exception as e:
+        logger.error(f"Error handling message: {str(e)}")
+
+# Subscribe to topic with message handler after logger is initialized
+subscribe_to_topic(test_topic, message_handler)
 
 def update_config():
     """Continuously update config in background"""
@@ -68,18 +93,21 @@ def fetch_rtsp_url():
 
             if not config:
                 print("No configuration found", 'error')
+                sys.stdout.flush()
                 time.sleep(5)
                 continue
                 
             rtsp_url = config.get('rtspStreamUrl')
             if not rtsp_url:
                 print("No RTSP URL found in configuration", 'error')
+                sys.stdout.flush()
                 time.sleep(5)
                 continue
                 
             return rtsp_url
         except Exception as e:
             print(f"Error fetching configuration: {e}", 'error')
+            sys.stdout.flush()
         return None
 
 def start_ffmpeg(rtsp_url):
@@ -102,6 +130,7 @@ def start_ffmpeg(rtsp_url):
         ]
         
         print(f"Starting FFmpeg with command: {' '.join(command)}")
+        sys.stdout.flush()
         
         # Create a process with pipe for stdout and stderr
         process = subprocess.Popen(
@@ -110,22 +139,12 @@ def start_ffmpeg(rtsp_url):
             stderr=subprocess.PIPE,
             universal_newlines=True
         )
-
-        # Create separate threads to handle stdout and stderr
-        def log_output(pipe, log_type):
-            for line in pipe:
-                line = line.strip()
-                if line:
-                    logger.info(f"FFmpeg {log_type}: {line}")
-
-        from threading import Thread
-        Thread(target=log_output, args=(process.stdout, "stdout"), daemon=True).start()
-        Thread(target=log_output, args=(process.stderr, "stderr"), daemon=True).start()
-
+        
         return process
 
     except Exception as e:
         print(f"Error starting FFmpeg: {str(e)}", 'error')
+        sys.stdout.flush()
         return None
 
 def monitor_process(process):
@@ -136,6 +155,7 @@ def monitor_process(process):
     return_code = process.poll()
     if return_code is not None:
         print(f"FFmpeg process exited with code {return_code}", 'error')
+        sys.stdout.flush()
         # Get any remaining output
         stdout, stderr = process.communicate()
         if stdout:
@@ -147,6 +167,7 @@ def monitor_process(process):
 
 if __name__ == "__main__":
     print("Starting camera streaming service")
+    sys.stdout.flush()
     process = None
 
     config_thread = threading.Thread(target=update_config, daemon=True)
@@ -159,15 +180,19 @@ if __name__ == "__main__":
                 rtsp_url = fetch_rtsp_url()
                 if rtsp_url:
                     print(f"Starting stream from: {rtsp_url}")
+                    sys.stdout.flush()
                     process = start_ffmpeg(rtsp_url)
                     if process is None:
                         print("Failed to start FFmpeg process", 'error')
+                        sys.stdout.flush()
                         time.sleep(10)
                 else:
                     print("Failed to fetch RTSP URL. Retrying in 10 seconds...", 'error')
+                    sys.stdout.flush()
                     time.sleep(10)
             time.sleep(1)  # Check process status every second
             
         except Exception as e:
             print(f"Unexpected error in main loop: {str(e)}", 'error')
+            sys.stdout.flush()
             time.sleep(10) 

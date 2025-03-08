@@ -1,12 +1,16 @@
 #!/bin/bash
 
 
-# Stop the streaming service
-echo "Stopping ffmpeg-stream"
-sudo systemctl stop ffmpeg-stream
-echo "Starting ffmpeg-stream"
-sudo systemctl start ffmpeg-stream
-echo "Showing logs"
-tail -f /var/log/ffmpeg_stream.log
+rm -rf /var/log/camera-streaming.log
 
-# sudo systemctl status ffmpeg-stream
+# Stop the streaming service
+echo "Stopping camera-streaming"
+sudo systemctl restart camera-streaming
+
+echo "Showing logs"
+
+tail -f /var/log/camera-streaming.log
+
+# sudo systemctl status camera-streaming
+
+# journalctl -u camera-streaming -f

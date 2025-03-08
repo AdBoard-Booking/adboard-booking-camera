@@ -4,7 +4,7 @@ from utils import get_cpu_serial
 import json
 from datetime import datetime
 import sys
-
+import os
 DEVICE_ID = get_cpu_serial()    
 
 # EMQX Broker Settings
@@ -55,9 +55,13 @@ def on_publish(client, userdata, mid, properties=None):
 def on_log(client, userdata, level, buf):
     logger.debug(f"MQTT Log: {buf}")
 
+def on_message(client, userdata, message):
+    logger.info(f"Received message on topic {message.topic}:\n{message.payload}")
+
 class MQTTClient:
     _instance = None
     _is_connected = False
+    _subscribed_topics = set()
     
     @staticmethod
     def get_instance():
@@ -70,6 +74,7 @@ class MQTTClient:
             client.on_disconnect = on_disconnect
             client.on_publish = on_publish
             client.on_log = on_log
+            client.on_message = on_message  # Add message callback
             
             # Enable SSL/TLS
             client.tls_set()
@@ -102,6 +107,52 @@ class MQTTClient:
             if time.time() - start_time > timeout:
                 raise TimeoutError("Connection timeout")
             time.sleep(0.1)
+
+    @staticmethod
+    def subscribe(topic, qos=1, message_handler=None):
+        """Subscribe to a topic"""
+        try:
+            client = MQTTClient.get_instance()
+            
+            # Wait for connection before subscribing
+            try:
+                MQTTClient.wait_for_connection()
+            except TimeoutError:
+                logger.error("Timed out waiting for MQTT connection")
+                return False
+                
+            result = client.subscribe(topic, qos)
+            if result[0] == 0:
+                logger.info(f"Successfully subscribed to topic: {topic}")
+                MQTTClient._subscribed_topics.add(topic)
+                
+                if message_handler:
+                    client.message_callback_add(topic, message_handler)
+                return True
+            else:
+                logger.error(f"Failed to subscribe to topic {topic}. Result code: {result[0]}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error in subscribe: {str(e)}", exc_info=True)
+            return False
+
+    @staticmethod
+    def unsubscribe(topic):
+        """Unsubscribe from a topic"""
+        try:
+            client = MQTTClient.get_instance()
+            result = client.unsubscribe(topic)
+            if result[0] == 0:
+                logger.info(f"Successfully unsubscribed from topic: {topic}")
+                MQTTClient._subscribed_topics.remove(topic)
+                return True
+            else:
+                logger.error(f"Failed to unsubscribe from topic {topic}. Result code: {result[0]}")
+                return False
+        except Exception as e:
+            logger.error(f"Error in unsubscribe: {str(e)}", exc_info=True)
+            return False
 
 def publish_message(message, topic=TOPIC):
     try:
@@ -155,6 +206,28 @@ def publish_message(message, topic=TOPIC):
 def publish_log(message, topic):
     publish_message(message, f"{topic}/{DEVICE_ID}")
 
+def subscribe_to_topic(topic, message_handler):
+    MQTTClient.subscribe(f"{topic}/{DEVICE_ID}", 0, message_handler)
+
+def publish_log_to_system_topic(message):
+    print(message, "system")
+
 if __name__ == "__main__":
+    # Example of publishing and subscribing
+    test_topic = "ffmpeg-stream"
+    
+    # Subscribe to test topic
+    subscribe_to_topic(test_topic,publish_log_to_system_topic)
+    
+    # Publish a test message
     message = "Car detected at intersection at 10:45 AM"
-    publish_message(message)
+    publish_message(message, test_topic)
+    
+    # Keep the program running to receive messages
+    try:
+        while True:
+            import time
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        MQTTClient.unsubscribe(test_topic)
