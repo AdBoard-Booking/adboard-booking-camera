@@ -6,9 +6,9 @@ import time
 import os
 import sys
 import logging
-from datetime import datetime
 import threading
 import json
+import datetime
 import pytz
 # Add the boot/service directory to Python path to import utils
 # sys.path.append('/opt/adboard/boot/service')
