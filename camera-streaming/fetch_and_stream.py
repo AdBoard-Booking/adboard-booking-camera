@@ -7,7 +7,9 @@ import os
 import sys
 import logging
 from datetime import datetime
-
+import threading
+import json
+import pytz
 # Add the boot/service directory to Python path to import utils
 # sys.path.append('/opt/adboard/boot/service')
 
@@ -20,6 +22,15 @@ from mqtt import publish_log
 
 # Set up logging
 LOG_FILE = '/var/log/camera_stream.log'
+
+config_lock = threading.Lock()
+global_config = None
+
+CONFIG_REFRESH_INTERVAL = 300
+
+ist_tz = pytz.timezone('Asia/Kolkata')
+logging.Formatter.converter = lambda *args: datetime.datetime.now(ist_tz).timetuple()
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -30,31 +41,46 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def print(message, level='info'):
-    """Log message to both file and MQTT"""
-    if level == 'error':
-        logger.error(message)
-    else:
-        logger.info(message)
-    publish_log(message, level)
+def update_config():
+    """Continuously update config in background"""
+    global global_config
+    while True:
+        try:
+            new_config = load_config_for_device()
+            if new_config:  # Only update if we got a valid config
+                with config_lock:
+                    global_config = new_config
+                logger.info(f"Configuration refreshed successfully: \n{json.dumps(new_config, indent=2)}")
+        except Exception as e:
+            logger.error(f"Error refreshing config: {str(e)}")
+        
+        time.sleep(CONFIG_REFRESH_INTERVAL)
+
+def get_current_config():
+    """Thread-safe getter for current config"""
+    with config_lock:
+        return global_config
 
 def fetch_rtsp_url():
-    try:
-        config = load_config_for_device()
-        print(f"Config: {config}")
-        if not config:
-            print("Failed to load configuration", 'error')
-            return None
-            
-        rtsp_url = config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
-        if not rtsp_url:
-            print("No RTSP URL found in configuration", 'error')
-            return None
-            
-        return rtsp_url
-    except Exception as e:
-        print(f"Error fetching configuration: {e}", 'error')
-    return None
+    while True:
+        try:
+            config = get_current_config()
+
+            if not config:
+                print("No configuration found", 'error')
+                time.sleep(5)
+                continue
+                
+            rtsp_url = config.get('rtspStreamUrl')
+            if not rtsp_url:
+                print("No RTSP URL found in configuration", 'error')
+                time.sleep(5)
+                continue
+                
+            return rtsp_url
+        except Exception as e:
+            print(f"Error fetching configuration: {e}", 'error')
+        return None
 
 def start_ffmpeg(rtsp_url):
     try:
@@ -122,6 +148,11 @@ def monitor_process(process):
 if __name__ == "__main__":
     print("Starting camera streaming service")
     process = None
+
+    config_thread = threading.Thread(target=update_config, daemon=True)
+    config_thread.start()
+    time.sleep(2)
+
     while True:
         try:
             if monitor_process(process):

@@ -1,4 +1,21 @@
 import requests
+import logging
+import sys
+
+DEBUG = False
+logger = logging.getLogger(__name__)
+if DEBUG:
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+else:
+    logger.addHandler(logging.NullHandler())
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout)  # This ensures logs go to stdout
+        ]
+    ) # Set to CRITICAL to disable INFO, WARNING, and DEBUG logs
+
 
 def get_cpu_serial():
     """Fetch the CPU serial number as a unique device ID."""
@@ -12,7 +29,7 @@ def get_cpu_serial():
     return "UNKNOWN"
 
 def load_config(device_id):
-    print("""Load configuration from the API.""")
+    logger.info("""Loading configuration from the API.""")
     # config_url = f"http://localhost:3000/api/camera/v1/config/{device_id}"
     config_url = f"https://railway.adboardbooking.com/api/camera/v1/config/{device_id}"
     try:

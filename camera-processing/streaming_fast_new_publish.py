@@ -59,7 +59,7 @@ def update_config():
             if new_config:  # Only update if we got a valid config
                 with config_lock:
                     global_config = new_config
-                logger.info("Configuration refreshed successfully")
+                logger.info(f"Configuration refreshed successfully: \n{json.dumps(new_config, indent=2)}")
         except Exception as e:
             logger.error(f"Error refreshing config: {str(e)}")
         
@@ -90,9 +90,12 @@ def capture_frames():
             time.sleep(5)
             continue
             
-        current_url = current_config.get('services', {}).get('billboardMonitoring', {}).get('rtspStreamUrl')
+        current_url = current_config.get('rtspStreamUrl')
         if not current_url:
-            current_url = "rtsp://adboardbooking:adboardbooking@192.168.29.204/stream2"  # fallback URL
+            logger.error("Missing rtspStreamUrl in configuration")
+            publish_log("Missing rtspStreamUrl in configuration", "error")
+            time.sleep(5)
+            continue
         
         try:
             cap = cv2.VideoCapture(current_url)
@@ -110,7 +113,7 @@ def capture_frames():
 
             # Reset connection attempts on successful connection
             connection_attempts = 0
-            logger.info("Successfully connected to video stream")
+            logger.info(f"Successfully connected to video stream {current_url}")
 
             while cap.isOpened():  # Keep reading while connection is good
                 ret, frame = cap.read()
@@ -133,17 +136,19 @@ def capture_frames():
 def analyze_image(image_blob):
     try:
         config = get_current_config()  # Use get_current_config instead of direct load
-        if not config or 'services' not in config or 'billboardMonitoring' not in config['services']:
+        if not config or 'billboardMonitoring' not in config:
             logger.error("Missing billboard monitoring configuration")
             publish_log("Missing billboard monitoring configuration", "error")
             return None
 
-        billboardMonitoring = config['services']['billboardMonitoring']
-        OPENROUTER_API_KEY = billboardMonitoring.get('aiApiKey')
+        OPENROUTER_API_KEY = config['aiApiKey']
         
         if not OPENROUTER_API_KEY:
+            publish_log("Missing AI API key", "error")
             return None
 
+
+        custom_instructions = config['billboardMonitoring'].get('customInstructions', '')
         
         payload = {
             "model": "qwen/qwen2.5-vl-72b-instruct:free",
@@ -151,7 +156,7 @@ def analyze_image(image_blob):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. Return a JSON response in the structure {hasScreenDefects:true, hasPatches:true, isOnline:true, details:''} that can be used directly in code."},
+                        {"type": "text", "text": f"I am a billboard owner, I want to know if my billboard is running. This is a digital billboard. It should not be pure black or white. Return a JSON response in the structure {{hasScreenDefects:true, hasPatches:true, isOnline:true, details:'' , currentlyPlaying:''}} that can be used directly in code. Custom instructions will suggest the location of the billboard. Custom instructions: {custom_instructions}"},
                         {
                             "type": "image_url",
                             "image_url":{
@@ -179,7 +184,7 @@ def analyze_image(image_blob):
                 json_string = match.group(1).strip() # Extract JSON content 
                 
                 json_object = json.loads(json_string) # Con
-                
+                json_object['customInstructions'] = custom_instructions
                 
                 return json_object
         else:
@@ -192,7 +197,7 @@ def monitor_billboard():
     while True:
         try:
             config = get_current_config()  # Use get_current_config instead of direct load
-            if not config or 'services' not in config or 'billboardMonitoring' not in config['services']:
+            if not config or 'billboardMonitoring' not in config :
                 logger.error("Missing billboard monitoring configuration, retrying in 60 seconds")
                 publish_log("Missing billboard monitoring configuration, retrying in 60 seconds", "error")
                 time.sleep(60)
@@ -214,7 +219,7 @@ def monitor_billboard():
 
             publish_log(analysis_result, "billboardMonitoring")
             
-            monitoring_interval = config['services']['billboardMonitoring'].get('monitoringInterval', 30)
+            monitoring_interval = config['billboardMonitoring'].get('monitoringInterval', 30)
             time.sleep(monitoring_interval * 60)
             
         except Exception as e:
@@ -369,7 +374,6 @@ def process_frames():
       
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
 # Start threads
 def main():
     sys.stdout.flush()
@@ -383,7 +387,7 @@ def main():
         config_thread.start()  # Start config update thread first
         time.sleep(2)  # Give it time to get initial config
         capture_thread.start()
-        process_thread.start()
+        # process_thread.start()
         billboard_thread.start()
 
         while True:

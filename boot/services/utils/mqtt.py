@@ -114,33 +114,34 @@ def publish_message(message, topic=TOPIC):
             logger.error("Timed out waiting for MQTT connection")
             return
             
-        # Convert message to JSON if it's not already
+        # Convert message to JSON-compatible dict if it's not already
         if isinstance(message, str):
             try:
                 # Check if the string is already valid JSON
-                json.loads(message)
-                msg_dict = message             
+                msg_dict = json.loads(message)
             except json.JSONDecodeError:
                 # If not JSON, create a new JSON object
                 msg_dict = {
                     "message": message,
                     "timestamp": datetime.now().isoformat()
                 }
-                msg_dict = json.dumps(msg_dict)
         else:
-            # If message is dict or other type, convert to JSON
+            # If message is dict or other type, convert to JSON-compatible dict
             if isinstance(message, dict):
-                message["timestamp"] = datetime.now().isoformat()
-                msg_dict = json.dumps(message)
+                msg_dict = message.copy()  # Create a copy to avoid modifying original
+                msg_dict["timestamp"] = datetime.now().isoformat()
             else:
-                msg_dict = json.dumps({
+                msg_dict = {
                     "message": str(message),
                     "timestamp": datetime.now().isoformat()
-                })
+                }
         
-            
-        logger.debug(f"Attempting to publish message: {msg_dict}")
-        result = client.publish(topic, msg_dict)
+        # Pretty print for logging
+        logger.info(f"Attempting to publish message to {topic}:\n{json.dumps(msg_dict, indent=2)}")
+        
+        # Convert to compact JSON string for publishing
+        msg_str = json.dumps(msg_dict)
+        result = client.publish(topic, msg_str)
         
         # Check if the message was published
         if result[0] == 0:
@@ -152,7 +153,6 @@ def publish_message(message, topic=TOPIC):
         logger.error(f"Error in publish_message: {str(e)}", exc_info=True)
 
 def publish_log(message, topic):
-    logger.info(f"Publishing log: {message} to topic: {topic}/{DEVICE_ID}")
     publish_message(message, f"{topic}/{DEVICE_ID}")
 
 if __name__ == "__main__":

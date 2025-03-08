@@ -46,6 +46,9 @@ echo "Setup completed successfully!"
 
 
 # debug process
+# sudo systemctl stop camera-processing
+# sudo systemctl start camera-processing
+
 # sudo systemctl status camera-processing
 # sudo journalctl -xe -u camera-processing
 # tail -f /var/log/camera-processing.log
