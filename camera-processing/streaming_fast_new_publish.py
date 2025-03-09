@@ -209,7 +209,7 @@ def analyze_image(image_blob):
             response = response.json()
             
             output = response.get("choices")[0].get("message").get("content")
-            cleaned_string = match = re.search(r'```json\n(.*?)\n```', output, re.DOTALL)
+            match = re.search(r'```json\n(.*?)\n```', output, re.DOTALL)
             
             if match: 
                 json_string = match.group(1).strip() # Extract JSON content 
@@ -243,6 +243,7 @@ def monitor_billboard():
             _, buffer = cv2.imencode(".jpg", frame)
             image_blob = base64.b64encode(buffer).decode("utf-8")
             analysis_result = analyze_image(image_blob)
+            analysis_result['config'] = config
 
             if not analysis_result:
                 time.sleep(60)

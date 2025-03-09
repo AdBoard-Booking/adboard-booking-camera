@@ -62,19 +62,32 @@ class MQTTClient:
     _instance = None
     _is_connected = False
     _subscribed_topics = set()
-    
+    _connection_attempts = 0
+    MAX_RETRIES = 2
+
     @staticmethod
-    def get_instance():
-        if MQTTClient._instance is None:
+    def get_instance(force_new=False):
+        if MQTTClient._instance is None or force_new:
+            if force_new:
+                logger.info("Creating new MQTT client instance...")
+                # Clean up old instance if it exists
+                if MQTTClient._instance is not None:
+                    try:
+                        MQTTClient._instance.loop_stop()
+                        MQTTClient._instance.disconnect()
+                    except:
+                        pass
+            
             MQTTClient._instance = mqtt.Client(protocol=mqtt.MQTTv5)
             client = MQTTClient._instance
+            MQTTClient._is_connected = False
             
             # Set up callbacks
             client.on_connect = lambda client, userdata, flags, rc, properties=None: MQTTClient._on_connect(client, userdata, flags, rc, properties)
             client.on_disconnect = on_disconnect
             client.on_publish = on_publish
             client.on_log = on_log
-            client.on_message = on_message  # Add message callback
+            client.on_message = on_message
             
             # Enable SSL/TLS
             client.tls_set()
@@ -100,13 +113,24 @@ class MQTTClient:
 
     @staticmethod
     def wait_for_connection(timeout=10):
-        """Wait for the connection to be established"""
+        """Wait for the connection to be established with retry logic"""
         import time
         start_time = time.time()
+        
         while not MQTTClient._is_connected:
             if time.time() - start_time > timeout:
-                raise TimeoutError("Connection timeout")
+                MQTTClient._connection_attempts += 1
+                if MQTTClient._connection_attempts <= MQTTClient.MAX_RETRIES:
+                    logger.warning(f"Connection attempt {MQTTClient._connection_attempts} failed. Creating new instance...")
+                    # Get a new instance and reset the timer
+                    MQTTClient.get_instance(force_new=True)
+                    start_time = time.time()
+                else:
+                    MQTTClient._connection_attempts = 0  # Reset for next time
+                    raise TimeoutError("Connection timeout after all retries")
             time.sleep(0.1)
+        
+        MQTTClient._connection_attempts = 0  # Reset on successful connection
 
     @staticmethod
     def subscribe(topic, qos=1, message_handler=None):
